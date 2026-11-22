@@ -5,6 +5,7 @@ import CurrencyPage from "../pages/currency.jsx";
 import RatePage from "../pages/RatePage.jsx";
 import ItemsPage from "../pages/ItemsPage.jsx";
 import PlaceOfSupplyPage, { STATES } from "../pages/PlaceOfSupplyPage.jsx";
+import CustomersPage from "../pages/CustomersPage.jsx";
 
 const COMPANY = {
   name: "WHITE STAR SHIPPING PRIVATE LIMITED",
@@ -77,6 +78,15 @@ const DEFAULT_CURRENCIES = [
 const GST_RATE_STORAGE_KEY = "white-star-gst-rates";
 const ITEMS_STORAGE_KEY = "white-star-items";
 const PLACES_STORAGE_KEY = "white-star-places";
+const CUSTOMERS_STORAGE_KEY = "white-star-customers";
+const INITIAL_CUSTOMERS = [{
+  id: 1,
+  name: INITIAL_FORM.customerName,
+  gstin: INITIAL_FORM.customerGstin,
+  address: INITIAL_FORM.customerAddress,
+  email: "",
+  phone: "",
+}];
 const INITIAL_ITEMS = INITIAL_CHARGES.map(({ id, description, sac, rate }) => ({
   id, description, sac, rate,
 }));
@@ -85,6 +95,7 @@ const WORKSPACE_PAGES = [
   { id: "currencies", label: "Currencies" },
   { id: "rates", label: "Rates" },
   { id: "items", label: "Items" },
+  { id: "customers", label: "Customers" },
   { id: "place-of-supply", label: "Place of Supply" },
 ];
 
@@ -179,6 +190,7 @@ export default function ProformaInvoice() {
   const [gstRates, setGstRates] = useState(() => loadStoredList(GST_RATE_STORAGE_KEY, DEFAULT_GST_RATES));
   const [items, setItems] = useState(() => loadStoredList(ITEMS_STORAGE_KEY, INITIAL_ITEMS));
   const [places, setPlaces] = useState(() => loadStoredList(PLACES_STORAGE_KEY, STATES));
+  const [customers, setCustomers] = useState(() => loadStoredList(CUSTOMERS_STORAGE_KEY, INITIAL_CUSTOMERS));
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -201,6 +213,26 @@ export default function ProformaInvoice() {
   useEffect(() => {
     window.localStorage.setItem(PLACES_STORAGE_KEY, JSON.stringify(places));
   }, [places]);
+
+  useEffect(() => {
+    window.localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(customers));
+  }, [customers]);
+
+  const useCustomer = (customer) => {
+    setForm((current) => ({
+      ...current,
+      customerName: customer.name,
+      customerGstin: customer.gstin || "",
+      customerAddress: customer.address || "",
+    }));
+    setErrors((current) => ({
+      ...current,
+      customerName: "",
+      customerGstin: "",
+      customerAddress: "",
+    }));
+    setPage("invoice");
+  };
 
   useEffect(() => {
     if (pendingDescriptionFocus.current === null) return;
@@ -370,8 +402,22 @@ export default function ProformaInvoice() {
     }
   };
 
+  const handleManagementArrowNavigation = (event) => {
+    if (page === "invoice" || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
+    const field = event.target;
+    if (!field.matches?.("input, textarea") || field.disabled || field.readOnly) return;
+    const managementPage = field.closest(".management-page");
+    if (!managementPage) return;
+
+    const fields = Array.from(managementPage.querySelectorAll("input:not(:disabled), textarea:not(:disabled)"))
+      .filter((entry) => entry.getClientRects().length > 0);
+    const nextField = fields[fields.indexOf(field) + (event.key === "ArrowUp" ? -1 : 1)];
+    event.preventDefault();
+    nextField?.focus();
+  };
+
   return (
-    <div className="bill-app">
+    <div className="bill-app" onKeyDownCapture={handleManagementArrowNavigation}>
       <header className="bill-toolbar">
         {page === "invoice" && <div className="toolbar-brand">
           <span className="toolbar-eyebrow">WHITE STAR SHIPPING</span>
@@ -399,14 +445,17 @@ export default function ProformaInvoice() {
           amountInWords={amountInWords}
           taxSummary={taxSummary}
           currencies={currencies}
+          currencySettings={currencySettings}
           gstRates={gstRates}
           items={items}
           places={places}
+          customers={customers}
           errors={errors}
           updateField={updateField}
           updatePlaceOfSupply={updatePlaceOfSupply}
           updateCharge={updateCharge}
           updateChargeCurrency={updateChargeCurrency}
+          onSelectCustomer={useCustomer}
           applyCatalogItem={applyCatalogItem}
           addCharge={addCharge}
           removeCharge={removeCharge}
@@ -422,6 +471,7 @@ export default function ProformaInvoice() {
         inUseRates={charges.map((charge) => Number(charge.gstRate))}
       />
         : page === "items" ? <ItemsPage items={items} onChange={setItems} onAddToInvoice={addItemToInvoice} />
+          : page === "customers" ? <CustomersPage customers={customers} onChange={setCustomers} onUseCustomer={useCustomer} />
           : <PlaceOfSupplyPage
             places={places}
             onPlacesChange={setPlaces}

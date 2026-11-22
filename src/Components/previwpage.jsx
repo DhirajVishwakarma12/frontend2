@@ -60,6 +60,94 @@ function handleInvoiceFieldKeyDown(event) {
   }
 }
 
+function CustomerPicker({ value, customers, error, onChange, onSelectCustomer }) {
+  const [editing, setEditing] = React.useState(false);
+  const [query, setQuery] = React.useState(value || "");
+  const [activeIndex, setActiveIndex] = React.useState(0);
+  const inputRef = React.useRef(null);
+  const startingValue = React.useRef(value || "");
+  const matches = query.trim()
+    ? customers.filter((customer) => customer.name?.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 7)
+    : [];
+
+  React.useEffect(() => {
+    if (!editing) setQuery(value || "");
+  }, [value, editing]);
+
+  React.useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
+  const selectCustomer = (customer) => {
+    onSelectCustomer(customer);
+    setQuery(customer.name);
+    setEditing(false);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape") {
+      onChange(startingValue.current);
+      setQuery(startingValue.current);
+      setEditing(false);
+    } else if (event.key === "ArrowDown" && matches.length) {
+      event.preventDefault();
+      setActiveIndex((current) => (current + 1) % matches.length);
+    } else if (event.key === "ArrowUp" && matches.length) {
+      event.preventDefault();
+      setActiveIndex((current) => (current - 1 + matches.length) % matches.length);
+    } else if (event.key === "Enter" && matches.length) {
+      event.preventDefault();
+      selectCustomer(matches[activeIndex] || matches[0]);
+    } else if (event.key === "Enter" || event.key === "ArrowDown") {
+      handleInvoiceFieldKeyDown(event);
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      handleInvoiceFieldKeyDown(event);
+    }
+  };
+
+  return editing ? <span className="customer-picker screen-only">
+    <input
+      ref={inputRef}
+      className={`direct-editable-input${error ? " has-error" : ""}`}
+      aria-label="Customer name"
+      aria-autocomplete="list"
+      aria-expanded={matches.length > 0}
+      aria-invalid={Boolean(error)}
+      value={query}
+      onFocus={() => { startingValue.current = value || ""; }}
+      onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); onChange(event.target.value); }}
+      onBlur={() => setEditing(false)}
+      onKeyDown={handleKeyDown}
+    />
+    {matches.length > 0 && <span className="customer-suggestions" role="listbox">
+      {matches.map((customer, index) => <button
+        type="button"
+        role="option"
+        aria-selected={index === activeIndex}
+        className={index === activeIndex ? "is-active" : ""}
+        key={customer.id}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => selectCustomer(customer)}
+      ><strong>{customer.name}</strong><span>{customer.gstin || "No GSTIN"}</span></button>)}
+    </span>}
+  </span> : <span
+    className={`direct-editable${error ? " has-error" : ""}`}
+    role="textbox"
+    aria-label="Edit customer name"
+    aria-invalid={Boolean(error)}
+    data-empty={!value ? "true" : "false"}
+    tabIndex={0}
+    onClick={() => setEditing(true)}
+    onFocus={() => setEditing(true)}
+    onKeyDown={(event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        setEditing(true);
+      }
+    }}
+  >{value || ""}</span>;
+}
+
 function PlaceOfSupplyPicker({ code, name, places, onSelect }) {
   const [query, setQuery] = React.useState(code);
   const [isOpen, setIsOpen] = React.useState(false);
@@ -353,13 +441,13 @@ function EditableText({ value, onChange, className = "", multiline = false, nume
   );
 }
 
-const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, totals, amountInWords, taxSummary, currencies, gstRates, items, places, errors, updateField, updatePlaceOfSupply, updateCharge, updateChargeCurrency, applyCatalogItem, addCharge, removeCharge, canRemoveCharge }) => {
+const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, totals, amountInWords, taxSummary, currencies, currencySettings, gstRates, items, places, customers, errors, updateField, updatePlaceOfSupply, updateCharge, updateChargeCurrency, applyCatalogItem, addCharge, removeCharge, canRemoveCharge, onSelectCustomer }) => {
   const missingExchangeRates = calculatedCharges.filter((row) =>
     row.currency !== "INR" && (!Number.isFinite(Number(row.exchangeRate)) || Number(row.exchangeRate) <= 0)
   ).length;
-  const exchangeRates = [...new Map(calculatedCharges
-    .filter((row) => row.currency !== "INR" && Number(row.exchangeRate) > 0)
-    .map((row) => [`${row.currency}-${row.exchangeRate}`, `1 ${row.currency} = ${money(row.exchangeRate)} INR`])).values()];
+  const exchangeRates = currencySettings
+    .filter((currency) => currency.code !== "INR" && Number.isFinite(Number(currency.inrValue)) && Number(currency.inrValue) > 0)
+    .map((currency) => `1 ${currency.code} = ${money(currency.inrValue)} INR`);
 
   return (
     <section className="preview-column">
@@ -384,7 +472,7 @@ const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, to
 
         <section className="invoice-details-box">
           <div className="invoice-party-details">
-            <div className="invoice-detail-row"><strong>Customer</strong><span><EditableText value={form.customerName} onChange={updateField("customerName")} error={errors.customerName} /></span></div>
+            <div className="invoice-detail-row"><strong>Customer</strong><span><CustomerPicker value={form.customerName} customers={customers} onChange={updateField("customerName")} onSelectCustomer={onSelectCustomer} error={errors.customerName} /></span></div>
             <EditableText className="customer-address-edit" value={form.customerAddress} onChange={updateField("customerAddress")} multiline error={errors.customerAddress} />
             {[
               ["GSTIN", "customerGstin", form.customerGstin],
@@ -395,7 +483,7 @@ const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, to
               ["Port Of Discharge", "portDischarge", form.portDischarge],
               ["Place Of Delivery", "placeDelivery", form.placeDelivery],
               ["Container No.", "containerNo", form.containerNo],
-            ].map(([label, field, value]) => <div className="invoice-detail-row" key={label}><strong>{label}</strong><span><EditableText value={value} onChange={updateField(field)} error={errors[field]} /></span></div>)}
+            ].map(([label, field, value]) => <div className={`invoice-detail-row${label === "Port Of Loading" ? " invoice-row-spaced" : ""}`} key={label}><strong>{label}</strong><span><EditableText value={value} onChange={updateField(field)} error={errors[field]} /></span></div>)}
             <div className="invoice-detail-row"><strong>Place of Supply</strong><span className="place-of-supply-value"><PlaceOfSupplyPicker code={form.placeOfSupplyCode} name={form.placeOfSupply} places={places} onSelect={updatePlaceOfSupply} /><span className="place-of-supply-print">({form.placeOfSupplyCode}) {form.placeOfSupply}</span></span></div>
             <div className="invoice-detail-row"><strong>Volume</strong><span className="volume-container-value"><EditableText value={form.volume} onChange={updateField("volume")} numeric error={errors.volume} /><span className="invoice-inline-x">x</span><EditableText value={form.containerType} onChange={updateField("containerType")} /></span></div>
           </div>
@@ -409,7 +497,7 @@ const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, to
             <div className="invoice-vessel-block" />
             <div className="invoice-right-row"><strong>Vessel Voy</strong><span><EditableText value={form.vessel} onChange={updateField("vessel")} /> <EditableText value={form.voyage} onChange={updateField("voyage")} /></span></div>
             <div className="invoice-right-row"><strong>Date Of Sailing</strong><span><EditableText value={dateForPrint(form.sailing)} onChange={(value) => updateField("sailing")(value.split("/").reverse().join("-"))} /></span></div>
-            <div className="invoice-right-row"><strong>Prepared By</strong><span><EditableText value={form.preparedBy} onChange={updateField("preparedBy")} /></span></div>
+            <div className="invoice-right-row invoice-row-spaced"><strong>Prepared By</strong><span><EditableText value={form.preparedBy} onChange={updateField("preparedBy")} /></span></div>
           </div>
         </section>
 
@@ -440,7 +528,7 @@ const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, to
                     {currencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}
                   </select>
                   {row.currency !== "INR" && (
-                    <span className="invoice-fx-entry screen-only">1 {row.currency} = {Number(row.exchangeRate) > 0 ? money(row.exchangeRate) : "Not set"} INR</span>
+                    <span className="invoice-fx-entry">1 {row.currency} = {Number(row.exchangeRate) > 0 ? money(row.exchangeRate) : "Not set"} INR</span>
                   )}
                 </td>
                 <td className="num"><EditableText value={formatRate(row.rateText)} onChange={(value) => updateCharge(row.id, "rate", value.replace(/,/g, ""))} error={errors[`charge-${row.id}-rate`]} /></td><td className="num">{money(row.amount)}</td>
