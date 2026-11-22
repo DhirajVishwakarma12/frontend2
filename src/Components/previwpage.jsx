@@ -30,6 +30,17 @@ function focusInvoiceField(currentTarget, direction = 1) {
   });
 }
 
+function focusNextChargeRow(currentTarget) {
+  const currentRow = currentTarget.closest("tr");
+  const tableBody = currentRow?.closest("tbody");
+  if (!currentRow || !tableBody) return;
+
+  const chargeRows = Array.from(tableBody.querySelectorAll("tr"))
+    .filter((row) => row.querySelector('[id^="charge-description-"]'));
+  const rowIndex = chargeRows.indexOf(currentRow);
+  chargeRows[rowIndex + 1]?.querySelector('[id^="charge-description-"]')?.focus();
+}
+
 function handleInvoiceFieldKeyDown(event) {
   const { key, currentTarget } = event;
   const isSelect = currentTarget.tagName === "SELECT";
@@ -79,9 +90,11 @@ function CustomerPicker({ value, customers, error, onChange, onSelectCustomer })
   }, [editing]);
 
   const selectCustomer = (customer) => {
+    const invoicePage = inputRef.current?.closest(".invoice-page");
     onSelectCustomer(customer);
     setQuery(customer.name);
     setEditing(false);
+    window.requestAnimationFrame(() => invoicePage?.querySelector(".customer-address-edit")?.focus());
   };
 
   const handleKeyDown = (event) => {
@@ -242,8 +255,8 @@ function RatePicker({ value, rates, onSelect }) {
             event.preventDefault();
             focusInvoiceField(event.currentTarget, -1);
           } else if (event.key === "Enter") {
-            event.preventDefault();
-            focusInvoiceField(event.currentTarget, 1);
+            const currentTarget = event.currentTarget;
+            window.requestAnimationFrame(() => focusNextChargeRow(currentTarget));
           }
         }}
       >

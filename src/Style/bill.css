@@ -41,6 +41,24 @@
   font-size: 13px;
 }
 
+.invoice-validation-summary {
+  width: min(100%, 1100px);
+  margin: 0 auto 14px;
+  padding: 12px 16px;
+  border: 1px solid #efc7c2;
+  border-radius: 9px;
+  color: #8f2e24;
+  background: #fff7f6;
+  font-size: 12px;
+}
+
+.invoice-validation-summary ul {
+  display: grid;
+  gap: 3px;
+  margin: 7px 0 0;
+  padding-left: 19px;
+}
+
 .toolbar-eyebrow,
 .section-kicker {
   color: var(--bill-accent);
@@ -1729,7 +1747,8 @@
 
   .bill-toolbar,
   .bill-editor,
-  .preview-heading {
+  .preview-heading,
+  .invoice-validation-summary {
     display: none !important;
   }
 

@@ -460,6 +460,13 @@ export default function ProformaInvoice() {
         </div>
       </header>
 
+      {page === "invoice" && Object.keys(errors).length > 0 && (
+        <div className="invoice-validation-summary" role="alert">
+          <strong>Fix these issues before printing:</strong>
+          <ul>{Object.values(errors).filter(Boolean).map((error, index) => <li key={`${error}-${index}`}>{error}</li>)}</ul>
+        </div>
+      )}
+
       {page === "invoice" ? <div className="bill-workspace preview-mode">
         <PreviewPage
           COMPANY={COMPANY}
