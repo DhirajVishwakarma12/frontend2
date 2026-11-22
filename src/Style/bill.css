@@ -43,6 +43,7 @@
 
 .invoice-validation-summary {
   width: min(100%, 1100px);
+  min-width: 0;
   margin: 0 auto 14px;
   padding: 12px 16px;
   border: 1px solid #efc7c2;
@@ -50,13 +51,20 @@
   color: #8f2e24;
   background: #fff7f6;
   font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .invoice-validation-summary ul {
   display: grid;
   gap: 3px;
   margin: 7px 0 0;
-  padding-left: 19px;
+  padding-inline-start: 19px;
+}
+
+.invoice-validation-summary li {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .toolbar-eyebrow,
@@ -1305,6 +1313,18 @@
   .bill-toolbar p {
     max-width: 40ch;
     line-height: 1.5;
+  }
+
+  .invoice-validation-summary {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .invoice-validation-summary ul {
+    gap: 6px;
+    padding-inline-start: 17px;
   }
 
   .toolbar-actions {

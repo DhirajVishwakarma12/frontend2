@@ -57,7 +57,31 @@ const INITIAL_FORM = {
 
 const createInitialForm = () => {
   const today = getCurrentDate();
-  return { ...INITIAL_FORM, date: today, ltDate: today };
+  return {
+    ...INITIAL_FORM,
+    proformaNo: "WS/PI/2026/001",
+    customerName: INITIAL_CUSTOMERS[0].name,
+    customerGstin: INITIAL_CUSTOMERS[0].gstin,
+    customerAddress: INITIAL_CUSTOMERS[0].address,
+    placeOfSupply: "Maharashtra",
+    placeOfSupplyCode: "27",
+    blNo: "MAEU123456789",
+    bookingNo: "WSB-2026-001",
+    shipper: "ACME EXPORTS PRIVATE LIMITED",
+    portLoading: "NHAVA SHEVA, INDIA",
+    portDischarge: "JEBEL ALI, UAE",
+    placeDelivery: "DUBAI, UAE",
+    volume: "1",
+    containerType: "20 FT",
+    containerNo: "MSCU1234567",
+    vessel: "MSC EXAMPLE",
+    voyage: "V. 026E",
+    sailing: today,
+    preparedBy: "Sales Team",
+    remarks: "Demo invoice — sample data for preview. Please replace before use.",
+    date: today,
+    ltDate: today,
+  };
 };
 
 const INITIAL_CHARGES = [
@@ -69,16 +93,10 @@ const INITIAL_CHARGES = [
   { id: 6, description: "SEAWAY BL CHARGES", sac: "996799", qty: "1", rate: "1500", currency: "INR", exchangeRate: "1", gstRate: "18" },
 ];
 
-const createInitialCharges = () => [{
-  id: Date.now(),
-  description: "",
-  sac: "",
-  qty: "1",
-  rate: "",
-  currency: "INR",
-  exchangeRate: "1",
-  gstRate: "18",
-}];
+const createInitialCharges = () => INITIAL_CHARGES.map((charge, index) => ({
+  ...charge,
+  id: Date.now() + index,
+}));
 
 const CURRENCY_STORAGE_KEY = "white-star-currency-rates";
 const DEFAULT_CURRENCIES = [
@@ -428,6 +446,35 @@ export default function ProformaInvoice() {
     }
   };
 
+  const validationLabel = (key) => {
+    const chargeError = key.match(/^charge-(\d+)-(.+)$/);
+    if (chargeError) {
+      const rowNumber = charges.findIndex((charge) => String(charge.id) === chargeError[1]) + 1;
+      const fieldLabels = {
+        description: "Description",
+        sac: "SAC code",
+        qty: "Quantity",
+        rate: "Rate",
+        currency: "Currency",
+        exchangeRate: "INR exchange rate",
+        gstRate: "GST rate",
+      };
+      return `Charge ${rowNumber || ""} ${fieldLabels[chargeError[2]] || chargeError[2]}`.trim();
+    }
+
+    return ({
+      proformaNo: "Proforma number",
+      date: "Invoice date",
+      customerName: "Customer name",
+      customerAddress: "Customer address",
+      customerGstin: "Customer GSTIN",
+      placeOfSupplyCode: "Place of supply",
+      volume: "Volume",
+      containerNo: "Container number",
+      charges: "Invoice charges",
+    })[key] || key;
+  };
+
   const handleManagementArrowNavigation = (event) => {
     if (page === "invoice" || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
     const field = event.target;
@@ -460,10 +507,12 @@ export default function ProformaInvoice() {
         </div>
       </header>
 
-      {page === "invoice" && Object.keys(errors).length > 0 && (
+      {page === "invoice" && Object.values(errors).some(Boolean) && (
         <div className="invoice-validation-summary" role="alert">
           <strong>Fix these issues before printing:</strong>
-          <ul>{Object.values(errors).filter(Boolean).map((error, index) => <li key={`${error}-${index}`}>{error}</li>)}</ul>
+          <ul>{Object.entries(errors).filter(([, error]) => Boolean(error)).map(([key, error]) => (
+            <li key={key}><strong>{validationLabel(key)}:</strong> {error}</li>
+          ))}</ul>
         </div>
       )}
 
