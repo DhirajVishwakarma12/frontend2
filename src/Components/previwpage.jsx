@@ -339,7 +339,7 @@ function DescriptionPicker({ chargeId, value, items, error, onChange, onSelectIt
   </>;
 }
 
-function EditableText({ value, onChange, className = "", multiline = false, numeric = false, error }) {
+function EditableText({ value, onChange, className = "", multiline = false, numeric = false, error, onEnter }) {
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState(value ?? "");
   const inputRef = React.useRef(null);
@@ -397,7 +397,8 @@ function EditableText({ value, onChange, className = "", multiline = false, nume
       setDraft(startingValueRef.current);
     } else if (event.key === "Enter" && (!multiline || event.ctrlKey)) {
       event.preventDefault();
-      focusInvoiceField(event.currentTarget, 1);
+      if (onEnter) onEnter();
+      else focusInvoiceField(event.currentTarget, 1);
     } else if (event.key === "ArrowDown" || event.key === "ArrowUp"
       || event.key === "ArrowLeft" || event.key === "ArrowRight") {
       handleInvoiceFieldKeyDown(event);
@@ -531,7 +532,7 @@ const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, to
                     <span className="invoice-fx-entry">1 {row.currency} = {Number(row.exchangeRate) > 0 ? money(row.exchangeRate) : "Not set"} INR</span>
                   )}
                 </td>
-                <td className="num"><EditableText value={formatRate(row.rateText)} onChange={(value) => updateCharge(row.id, "rate", value.replace(/,/g, ""))} error={errors[`charge-${row.id}-rate`]} /></td><td className="num">{money(row.amount)}</td>
+                <td className="num"><EditableText value={formatRate(row.rateText)} onChange={(value) => updateCharge(row.id, "rate", value.replace(/,/g, ""))} error={errors[`charge-${row.id}-rate`]} onEnter={index === calculatedCharges.length - 1 ? addCharge : undefined} /></td><td className="num">{money(row.amount)}</td>
                 {form.taxMode === "intra" ? <><td className="center"><RatePicker value={row.gstRate / 2} rates={gstRates.map((rate) => Number(rate) / 2)} onSelect={(value) => updateCharge(row.id, "gstRate", String(Number(value) * 2))} /></td><td className="num">{money(row.cgst)}</td><td className="center"><RatePicker value={row.gstRate / 2} rates={gstRates.map((rate) => Number(rate) / 2)} onSelect={(value) => updateCharge(row.id, "gstRate", String(Number(value) * 2))} /></td><td className="num">{money(row.sgst)}</td></> : <><td className="center"><RatePicker value={row.gstRate} rates={gstRates.map(Number)} onSelect={(value) => updateCharge(row.id, "gstRate", value)} /></td><td className="num">{money(row.igst)}</td></>}
                 <td className="num">{money(row.total)}</td>
               </tr>

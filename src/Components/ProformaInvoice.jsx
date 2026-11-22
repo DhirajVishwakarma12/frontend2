@@ -32,25 +32,25 @@ const getCurrentDate = () => {
 };
 
 const INITIAL_FORM = {
-  proformaNo: "PIWSS262709646",
-  blNo: "WSSJ2627-01642",
-  customerName: "IET LOGISTICS PRIVATE LIMITED",
-  customerGstin: "27AAHCI3210J1ZQ",
-  customerAddress: "FIRST FLOOR, FLAT NO 101 PLOT NO 131 T.P.S. III, AMAR 1 CHS LTD.\nFACTORY LANE, NEAR M K COLLEGE, BORIVALI WEST,\nMUMBAI, MUMBAI SUBURBAN, MAHARASHTRA, 400092",
-  placeOfSupply: "MAHARASHTRA",
-  placeOfSupplyCode: "27",
-  bookingNo: "IN00556169 KHOR FAKKAN",
-  shipper: "DAANI ENTERPRISES",
-  portLoading: "NHAVA SHEVA",
-  portDischarge: "KHOR FAKKAN",
-  placeDelivery: "KHOR FAKKAN",
-  volume: "1",
-  containerType: "40 High Cube",
-  containerNo: "FFAU3968380",
-  vessel: "ESL NHAVA SHEVA",
-  voyage: "V-02642W",
-  sailing: "2026-11-11",
-  preparedBy: "Samiya Shaikh",
+  proformaNo: "",
+  blNo: "",
+  customerName: "",
+  customerGstin: "",
+  customerAddress: "",
+  placeOfSupply: "",
+  placeOfSupplyCode: "",
+  bookingNo: "",
+  shipper: "",
+  portLoading: "",
+  portDischarge: "",
+  placeDelivery: "",
+  volume: "",
+  containerType: "",
+  containerNo: "",
+  vessel: "",
+  voyage: "",
+  sailing: "",
+  preparedBy: "",
   remarks: "",
   taxMode: "intra",
 };
@@ -69,6 +69,17 @@ const INITIAL_CHARGES = [
   { id: 6, description: "SEAWAY BL CHARGES", sac: "996799", qty: "1", rate: "1500", currency: "INR", exchangeRate: "1", gstRate: "18" },
 ];
 
+const createInitialCharges = () => [{
+  id: Date.now(),
+  description: "",
+  sac: "",
+  qty: "1",
+  rate: "",
+  currency: "INR",
+  exchangeRate: "1",
+  gstRate: "18",
+}];
+
 const CURRENCY_STORAGE_KEY = "white-star-currency-rates";
 const DEFAULT_CURRENCIES = [
   { code: "INR", name: "Indian Rupee", inrValue: "1" },
@@ -81,9 +92,9 @@ const PLACES_STORAGE_KEY = "white-star-places";
 const CUSTOMERS_STORAGE_KEY = "white-star-customers";
 const INITIAL_CUSTOMERS = [{
   id: 1,
-  name: INITIAL_FORM.customerName,
-  gstin: INITIAL_FORM.customerGstin,
-  address: INITIAL_FORM.customerAddress,
+  name: "IET LOGISTICS PRIVATE LIMITED",
+  gstin: "27AAHCI3210J1ZQ",
+  address: "FIRST FLOOR, FLAT NO 101 PLOT NO 131 T.P.S. III, AMAR 1 CHS LTD.\nFACTORY LANE, NEAR M K COLLEGE, BORIVALI WEST,\nMUMBAI, MUMBAI SUBURBAN, MAHARASHTRA, 400092",
   email: "",
   phone: "",
 }];
@@ -118,6 +129,21 @@ function loadStoredList(key, fallback) {
     return Array.isArray(saved) ? saved : fallback;
   } catch {
     return fallback;
+  }
+}
+function loadCustomers() {
+  const demoSeedKey = "white-star-demo-customer-seeded";
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(CUSTOMERS_STORAGE_KEY));
+    const demoSeeded = window.localStorage.getItem(demoSeedKey) === "true";
+    window.localStorage.setItem(demoSeedKey, "true");
+    if (!Array.isArray(saved) || (saved.length === 0 && !demoSeeded)) return INITIAL_CUSTOMERS;
+    return saved.map((customer) => ({
+      ...customer,
+      phone: String(customer.phone || "").replace(/\D/g, "") === "07039640900" ? "" : customer.phone || "",
+    }));
+  } catch {
+    return INITIAL_CUSTOMERS;
   }
 }
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
@@ -182,7 +208,7 @@ function amountInWords(amount) {
 
 export default function ProformaInvoice() {
   const [form, setForm] = useState(createInitialForm);
-  const [charges, setCharges] = useState(INITIAL_CHARGES);
+  const [charges, setCharges] = useState(createInitialCharges);
   const pendingDescriptionFocus = useRef(null);
   const [page, setPage] = useState("invoice");
   const [currencySettings, setCurrencySettings] = useState(loadCurrencySettings);
@@ -190,7 +216,7 @@ export default function ProformaInvoice() {
   const [gstRates, setGstRates] = useState(() => loadStoredList(GST_RATE_STORAGE_KEY, DEFAULT_GST_RATES));
   const [items, setItems] = useState(() => loadStoredList(ITEMS_STORAGE_KEY, INITIAL_ITEMS));
   const [places, setPlaces] = useState(() => loadStoredList(PLACES_STORAGE_KEY, STATES));
-  const [customers, setCustomers] = useState(() => loadStoredList(CUSTOMERS_STORAGE_KEY, INITIAL_CUSTOMERS));
+  const [customers, setCustomers] = useState(loadCustomers);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
