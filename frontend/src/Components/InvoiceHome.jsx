@@ -4,7 +4,7 @@ export default function InvoiceHome({ user, onViewInvoice, onCreateInvoice, onOp
   return (
     <main className="invoice-home">
       <header className="invoice-home-header">
-        <span className="invoice-home-brand">WHITE STAR SHIPPING</span>
+        <span className="invoice-home-brand">IET LOGISTICS PRIVATE LTD</span>
         <span className="invoice-home-header-actions">
           {user?.role === "admin" && <button type="button" className="invoice-home-admin-link" onClick={onOpenAdmin}>Admin dashboard</button>}
           <span className="invoice-home-kicker">BILLING WORKSPACE</span>
@@ -26,7 +26,7 @@ export default function InvoiceHome({ user, onViewInvoice, onCreateInvoice, onOp
           </span>
         </button>
       </section>
-      <footer className="invoice-home-footer">WHITE STAR SHIPPING PRIVATE LIMITED</footer>
+      <footer className="invoice-home-footer">IET LOGISTICS PRIVATE LTD</footer>
     </main>
   );
 }

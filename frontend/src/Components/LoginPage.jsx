@@ -28,11 +28,11 @@ export default function LoginPage({ onLogin }) {
 
   return (
     <main className="login-page">
-      <section className="login-story" aria-label="White Star Shipping">
+      <section className="login-story" aria-label="IET LOGISTICS PRIVATE LTD">
         <div className="login-story-inner">
-          <a className="login-brand" href="#login" aria-label="White Star Shipping home">
+          <a className="login-brand" href="#login" aria-label="IET LOGISTICS PRIVATE LTD home">
             <span className="login-brand-mark" aria-hidden="true">✦</span>
-            <span>WHITE STAR SHIPPING</span>
+            <span>IET LOGISTICS PRIVATE LTD</span>
           </a>
           <div className="login-story-copy">
             <span className="login-kicker">SHIPPING, MADE SIMPLE</span>
@@ -47,7 +47,7 @@ export default function LoginPage({ onLogin }) {
 
       <section className="login-panel" id="login">
         <div className="login-form-wrap">
-          <div className="login-mobile-brand"><span className="login-brand-mark" aria-hidden="true">✦</span> WHITE STAR SHIPPING</div>
+          <div className="login-mobile-brand"><span className="login-brand-mark" aria-hidden="true">✦</span> IET LOGISTICS PRIVATE LTD</div>
           <div className="login-heading">
             <span className="login-kicker">YOUR WORKSPACE</span>
             <h2>Welcome back</h2>
@@ -74,7 +74,7 @@ export default function LoginPage({ onLogin }) {
           <p className="login-help">Need access? Contact your administrator</p>
           <div className="login-security"><span aria-hidden="true">✓</span> Secure workspace access</div>
         </div>
-        <footer className="login-copyright">© {new Date().getFullYear()} White Star Shipping Private Limited</footer>
+        <footer className="login-copyright">© {new Date().getFullYear()} IET LOGISTICS PRIVATE LTD</footer>
       </section>
     </main>
   );

@@ -4,7 +4,7 @@ import User from "../models/User.js";
 
 const PASSWORD_HASH_ROUNDS = 12;
 const MAX_PASSWORD_BYTES = 72;
-const MIN_PASSWORD_LENGTH = 12;
+const MIN_PASSWORD_LENGTH = 4;
 
 function isValidEmail(email) {
   return typeof email === "string" && email.length <= 254

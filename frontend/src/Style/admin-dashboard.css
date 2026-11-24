@@ -202,6 +202,63 @@
   gap: 12px;
 }
 
+.admin-create-user-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 16px;
+  border: 1px solid #e7eaed;
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+.admin-create-user-form label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.admin-create-user-form label span {
+  color: var(--admin-muted);
+  font-size: 10px;
+}
+
+.admin-create-user-form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 1px solid #d9dee4;
+  border-radius: 7px;
+  color: var(--admin-ink);
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+}
+
+.admin-password-input {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-password-input button {
+  min-width: 52px;
+  border: 1px solid var(--admin-line);
+  border-radius: 7px;
+  color: #414a53;
+  background: #fff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-create-user-status {
+  margin: -8px 0 14px;
+}
+
 .admin-user-card {
   display: grid;
   grid-template-columns: minmax(140px, .8fr) minmax(230px, 1fr) minmax(230px, 1fr);
@@ -355,6 +412,10 @@
   }
 
   .admin-account-form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-create-user-form {
     grid-template-columns: 1fr;
   }
 }

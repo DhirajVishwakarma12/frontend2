@@ -18,7 +18,7 @@ export default function Animation({ onComplete }) {
         <div className="intro-emblem" aria-hidden="true">
           <span>✦</span>
         </div>
-        <p className="intro-brand">WHITE STAR SHIPPING</p>
+        <p className="intro-brand">IET LOGISTICS PRIVATE LTD</p>
         <h1>Proforma Invoice</h1>
         <p className="intro-caption">A clearer way to manage your billing.</p>
         <div className="intro-progress" aria-hidden="true">

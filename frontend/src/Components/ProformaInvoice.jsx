@@ -10,7 +10,7 @@ import { loadWorkspaceData, saveWorkspaceData } from "../services/workspaceData.
 import { createInvoice, getInvoice, getInvoices, saveInvoice } from "../services/invoices.js";
 
 const COMPANY = {
-  name: "WHITE STAR SHIPPING PRIVATE LIMITED",
+  name: "IET LOGISTICS PRIVATE LTD",
   address: [
     "3rd Floor Office No: A 312, Kukreja Plaza Plot 46",
     "Sector -11, CBD Belapur Navi Mumbai-400614",
@@ -19,7 +19,7 @@ const COMPANY = {
   gstin: "27AADCV4578P1ZF",
   stateCode: "27",
   bank: {
-    beneficiary: "WHITE STAR SHIPPING PRIVATE LIMITED",
+    beneficiary: "IET LOGISTICS PRIVATE LTD",
     name: "HDFC BANK CBD Belapur",
     account: "99999833560055",
     ifsc: "HDFC0002860",
@@ -263,6 +263,30 @@ function amountInWords(amount) {
   return `${result} ONLY`;
 }
 
+function invoiceLabel(invoice, index) {
+  return invoice.form?.proformaNo?.trim() || `Invoice ${index + 1}`;
+}
+
+function invoiceFileName(invoice, index) {
+  return invoiceLabel(invoice, index).replace(/[\\/:*?"<>|]/g, "-").slice(0, 100) || `invoice-${index + 1}`;
+}
+
+function escapeInvoiceHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;",
+  }[character]));
+}
+
+function invoiceExportHtml(invoice) {
+  const form = invoice.form || {};
+  const chargeRows = (invoice.charges || []).map((charge, index) => `\n    <tr><td>${index + 1}</td><td>${escapeInvoiceHtml(charge.description)}</td><td>${escapeInvoiceHtml(charge.sac)}</td><td>${escapeInvoiceHtml(charge.qty)}</td><td>${escapeInvoiceHtml(charge.currency)}</td><td>${escapeInvoiceHtml(charge.rate)}</td></tr>`).join("");
+  return `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><title>${escapeInvoiceHtml(invoiceLabel(invoice, 0))}</title>\n<style>body{margin:0;padding:32px;color:#202a31;background:#edf1ef;font:14px Arial,sans-serif}.invoice{max-width:920px;margin:auto;padding:40px;background:#fff;box-shadow:0 2px 12px #0002}h1{margin:0;color:#152a31;font:32px Georgia,serif}h2{margin:28px 0 10px;font-size:16px}.company{color:#b08a56;font-weight:700;letter-spacing:1px}.details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px}.details p{margin:0}.label{color:#68757b;font-size:11px;font-weight:700;text-transform:uppercase}table{width:100%;border-collapse:collapse;margin-top:14px}th,td{padding:9px;border:1px solid #d7dfdc;text-align:left}th{background:#152a31;color:#fff}@media print{body{padding:0;background:#fff}.invoice{max-width:none;box-shadow:none}}</style>\n</head><body><main class="invoice"><p class="company">IET LOGISTICS PRIVATE LTD</p><h1>${escapeInvoiceHtml(invoiceLabel(invoice, 0))}</h1><h2>Invoice details</h2><section class="details"><p><span class="label">Customer</span><br>${escapeInvoiceHtml(form.customerName)}</p><p><span class="label">Invoice date</span><br>${escapeInvoiceHtml(form.date)}</p><p><span class="label">GSTIN</span><br>${escapeInvoiceHtml(form.customerGstin)}</p><p><span class="label">BL No.</span><br>${escapeInvoiceHtml(form.blNo)}</p><p><span class="label">Shipper</span><br>${escapeInvoiceHtml(form.shipper)}</p><p><span class="label">Place of supply</span><br>${escapeInvoiceHtml(form.placeOfSupply)}</p></section><h2>Charges</h2><table><thead><tr><th>#</th><th>Description</th><th>SAC</th><th>Qty</th><th>Currency</th><th>Rate</th></tr></thead><tbody>${chargeRows}</tbody></table></main></body></html>`;
+}
+
 export default function ProformaInvoice({ mode = "view", onHome, onLogout, user, invoiceId }) {
   const allowLegacyData = user?.role === "admin";
   const [form, setForm] = useState(() => mode === "create" ? createNewInvoiceForm() : createInitialForm());
@@ -272,6 +296,9 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
   const [activeInvoiceId, setActiveInvoiceId] = useState(invoiceId || null);
   const [invoiceReady, setInvoiceReady] = useState(false);
   const [invoiceSaveError, setInvoiceSaveError] = useState("");
+  const [savedInvoices, setSavedInvoices] = useState([]);
+  const [invoiceExportStatus, setInvoiceExportStatus] = useState("");
+  const [exportingInvoices, setExportingInvoices] = useState(false);
   const [workspaceDataReady, setWorkspaceDataReady] = useState(false);
   const [currencySettings, setCurrencySettings] = useState(() => loadCurrencySettings(user?.id, allowLegacyData));
   const currencies = currencySettings.map((currency) => currency.code);
@@ -305,6 +332,48 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
     }
   };
 
+  const selectInvoice = async (nextInvoiceId) => {
+    if (!nextInvoiceId || nextInvoiceId === activeInvoiceId) return;
+    try {
+      const { invoice } = await getInvoice(nextInvoiceId);
+      setForm(invoice.form);
+      setCharges(invoice.charges);
+      setActiveInvoiceId(invoice.id);
+      setInvoiceReady(true);
+      setInvoiceSaveError("");
+    } catch (error) {
+      setInvoiceSaveError(`Invoice could not be loaded: ${error.message}`);
+    }
+  };
+
+  const exportAllInvoices = async () => {
+    if (!("showDirectoryPicker" in window)) {
+      setInvoiceExportStatus("Choose a folder is available in Chrome and Edge.");
+      return;
+    }
+    setInvoiceExportStatus("");
+    setExportingInvoices(true);
+    try {
+      const { invoices } = await getInvoices();
+      if (!invoices.length) {
+        setInvoiceExportStatus("There are no invoices to export.");
+        return;
+      }
+      const directory = await window.showDirectoryPicker({ mode: "readwrite" });
+      await Promise.all(invoices.map(async (invoice, index) => {
+        const file = await directory.getFileHandle(`${invoiceFileName(invoice, index)}.html`, { create: true });
+        const writable = await file.createWritable();
+        await writable.write(invoiceExportHtml(invoice));
+        await writable.close();
+      }));
+      setInvoiceExportStatus(`${invoices.length} invoice${invoices.length === 1 ? "" : "s"} exported to the selected folder.`);
+    } catch (error) {
+      if (error.name !== "AbortError") setInvoiceExportStatus(error.message || "Invoices could not be exported.");
+    } finally {
+      setExportingInvoices(false);
+    }
+  };
+
   useEffect(() => {
     let active = true;
     const hydrate = (invoice) => {
@@ -321,6 +390,7 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
       });
     } else if (mode === "view") {
       getInvoices().then(({ invoices: savedInvoices }) => {
+        if (active) setSavedInvoices(savedInvoices);
         if (savedInvoices.length) hydrate(savedInvoices[0]);
         else if (active) setInvoiceReady(true);
       }).catch((error) => {
@@ -678,11 +748,19 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
               <option value="logout">Log out</option>
             </select>
           </label>
+          {page === "invoice" && mode === "view" && savedInvoices.length > 0 && <label className="invoice-navigation">
+            <span>My invoices</span>
+            <select aria-label="Choose one of your invoices" value={activeInvoiceId || ""} onChange={(event) => selectInvoice(event.target.value)}>
+              {savedInvoices.map((invoice, index) => <option key={invoice.id} value={invoice.id}>{invoiceLabel(invoice, index)}</option>)}
+            </select>
+          </label>}
+          {page === "invoice" && mode === "view" && <button type="button" className="btn btn-light" onClick={exportAllInvoices} disabled={exportingInvoices}>{exportingInvoices ? "Exporting…" : "Export all"}</button>}
           {page === "invoice" && <button type="button" className="btn btn-primary" onClick={handlePrint}>Print / Save PDF</button>}
         </div>
       </header>
 
       {invoiceSaveError && <div className="invoice-save-error" role="alert">{invoiceSaveError}</div>}
+      {invoiceExportStatus && <p className="invoice-export-status" role="status">{invoiceExportStatus}</p>}
 
       {page === "invoice" && Object.values(errors).some(Boolean) && (
         <div className="invoice-validation-summary" role="alert">

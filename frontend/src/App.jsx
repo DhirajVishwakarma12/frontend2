@@ -16,8 +16,8 @@ function App() {
   const [adminDashboardOpen, setAdminDashboardOpen] = useState(false);
   const [returnToAdminDashboard, setReturnToAdminDashboard] = useState(false);
   const finishIntro = useCallback(() => setShowIntro(false), []);
-  const title = "Proforma Invoice | White Star Shipping";
-  const description = "Review, edit, and print proforma invoices from White Star Shipping.";
+  const title = "Proforma Invoice | IET LOGISTICS PRIVATE LTD";
+  const description = "Review, edit, and print proforma invoices from IET LOGISTICS PRIVATE LTD.";
 
   useEffect(() => {
     if (showIntro) return undefined;
@@ -75,13 +75,6 @@ function App() {
     setInvoiceMode("view");
   };
 
-  const openAdminCreateInvoice = () => {
-    setReturnToAdminDashboard(true);
-    setAdminDashboardOpen(false);
-    setInvoiceId(null);
-    setInvoiceMode("create");
-  };
-
   return (
     <>
       <title>{title}</title>
@@ -89,12 +82,12 @@ function App() {
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:type" content="website" />
-      <meta property="og:site_name" content="White Star Shipping" />
+      <meta property="og:site_name" content="IET LOGISTICS PRIVATE LTD" />
       <meta
         property="og:url"
         content={typeof window === "undefined" ? "" : window.location.href}
       />
-      {showIntro ? <Animation onComplete={finishIntro} /> : !authChecked ? <main className="login-page" aria-live="polite">Checking sign-in…</main> : isLoggedIn ? adminDashboardOpen && currentUser?.role === "admin" ? <AdminDashboard user={currentUser} onBack={() => setAdminDashboardOpen(false)} onOpenInvoice={openAdminInvoice} onCreateInvoice={openAdminCreateInvoice} /> : invoiceMode ? <ProformaInvoice key={`${invoiceMode}-${currentUser?.id}-${invoiceId || "new"}`} user={currentUser} mode={invoiceMode} invoiceId={invoiceId} onHome={closeInvoice} onLogout={handleLogout} /> : <InvoiceHome user={currentUser} onOpenAdmin={() => setAdminDashboardOpen(true)} onViewInvoice={() => openInvoice("view")} onCreateInvoice={() => openInvoice("create")} /> : <LoginPage onLogin={handleLogin} />}
+      {showIntro ? <Animation onComplete={finishIntro} /> : !authChecked ? <main className="login-page" aria-live="polite">Checking sign-in…</main> : isLoggedIn ? adminDashboardOpen && currentUser?.role === "admin" ? <AdminDashboard user={currentUser} onLogout={handleLogout} onOpenInvoice={openAdminInvoice} /> : invoiceMode ? <ProformaInvoice key={`${invoiceMode}-${currentUser?.id}-${invoiceId || "new"}`} user={currentUser} mode={invoiceMode} invoiceId={invoiceId} onHome={closeInvoice} onLogout={handleLogout} /> : <InvoiceHome user={currentUser} onOpenAdmin={() => setAdminDashboardOpen(true)} onViewInvoice={() => openInvoice("view")} onCreateInvoice={() => openInvoice("create")} /> : <LoginPage onLogin={handleLogin} />}
     </>
   );
 }

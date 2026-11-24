@@ -18,6 +18,13 @@ export function getUsers() {
   return request("/api/users");
 }
 
+export function createUser(email, password) {
+  return request("/api/users", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
 export function updateUserEmail(userId, email) {
   return request(`/api/users/${encodeURIComponent(userId)}/email`, {
     method: "PATCH",

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getUsers, resetUserPassword, updateUserEmail } from "../services/admin.js";
+import { createUser, getUsers, resetUserPassword, updateUserEmail } from "../services/admin.js";
 import { getInvoices } from "../services/invoices.js";
 import { changeAdminPassword } from "../services/auth.js";
 import "../Style/admin-dashboard.css";
@@ -19,7 +19,7 @@ function dateLabel(value) {
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-export default function AdminDashboard({ user, onBack, onOpenInvoice, onCreateInvoice }) {
+export default function AdminDashboard({ user, onLogout, onOpenInvoice }) {
   const [section, setSection] = useState("invoices");
   const [invoices, setInvoices] = useState([]);
   const [users, setUsers] = useState([]);
@@ -33,6 +33,11 @@ export default function AdminDashboard({ user, onBack, onOpenInvoice, onCreateIn
   const [newAdminPassword, setNewAdminPassword] = useState("");
   const [accountStatus, setAccountStatus] = useState("");
   const [savingAdminPassword, setSavingAdminPassword] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserStatus, setNewUserStatus] = useState("");
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
   const refresh = async () => {
     setLoading(true);
@@ -75,8 +80,8 @@ export default function AdminDashboard({ user, onBack, onOpenInvoice, onCreateIn
 
   const savePassword = async (account) => {
     const password = passwordDrafts[account.id] || "";
-    if (password.length < 12 || new TextEncoder().encode(password).length > 72) {
-      setStatuses((current) => ({ ...current, [account.id]: "Use a password of 12–72 bytes." }));
+    if (password.length < 4 || new TextEncoder().encode(password).length > 72) {
+      setStatuses((current) => ({ ...current, [account.id]: "Use a password of 4–72 bytes." }));
       return;
     }
     setStatuses((current) => ({ ...current, [account.id]: "saving-password" }));
@@ -105,17 +110,34 @@ export default function AdminDashboard({ user, onBack, onOpenInvoice, onCreateIn
     }
   };
 
+  const addUser = async (event) => {
+    event.preventDefault();
+    setNewUserStatus("");
+    setCreatingUser(true);
+    try {
+      await createUser(newUserEmail, newUserPassword);
+      setNewUserEmail("");
+      setNewUserPassword("");
+      setShowNewUserPassword(false);
+      setNewUserStatus("User created.");
+      await refresh();
+    } catch (error) {
+      setNewUserStatus(error.message);
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
   return (
     <main className="admin-dashboard">
       <header className="admin-dashboard-header">
         <div>
-          <span className="admin-dashboard-kicker">WHITE STAR SHIPPING · ADMIN</span>
+          <span className="admin-dashboard-kicker">IET LOGISTICS PRIVATE LTD · ADMIN</span>
           <h1>Admin dashboard</h1>
           <p>Signed in as {user?.email}</p>
         </div>
         <div className="admin-header-actions">
-          <button type="button" className="admin-button admin-button-dark" onClick={onCreateInvoice}>Create invoice</button>
-          <button type="button" className="admin-button admin-button-light" onClick={onBack}>Back to workspace</button>
+          <button type="button" className="admin-button admin-button-dark" onClick={onLogout}>Log out</button>
         </div>
       </header>
 
@@ -149,6 +171,12 @@ export default function AdminDashboard({ user, onBack, onOpenInvoice, onCreateIn
         </div>
       </section> : section === "users" ? <section className="admin-card">
         <div className="admin-section-heading"><div><h2>User accounts</h2><p>Update a user’s email or reset their password. Passwords are never displayed.</p></div></div>
+        <form className="admin-create-user-form" onSubmit={addUser}>
+          <label><span>Email address</span><input type="email" autoComplete="email" required value={newUserEmail} onChange={(event) => setNewUserEmail(event.target.value)} placeholder="user@example.com" /></label>
+          <label><span>Employee password</span><span className="admin-password-input"><input type={showNewUserPassword ? "text" : "password"} autoComplete="new-password" minLength="4" maxLength="72" required value={newUserPassword} onChange={(event) => setNewUserPassword(event.target.value)} placeholder="4 to 72 characters" /><button type="button" onClick={() => setShowNewUserPassword((current) => !current)}>{showNewUserPassword ? "Hide" : "Show"}</button></span></label>
+          <button type="submit" className="admin-button admin-button-dark" disabled={creatingUser}>{creatingUser ? "Creating…" : "Add user"}</button>
+        </form>
+        {newUserStatus && <p className={`admin-user-status admin-create-user-status ${newUserStatus === "User created." ? "is-success" : ""}`} role="status">{newUserStatus}</p>}
         <div className="admin-user-list">
           {users.map((account) => <article className="admin-user-card" key={account.id}>
             <div className="admin-user-meta"><strong>{account.email}</strong><span>Created {dateLabel(account.createdAt)}</span></div>
@@ -157,7 +185,7 @@ export default function AdminDashboard({ user, onBack, onOpenInvoice, onCreateIn
               <button type="submit" className="admin-button admin-button-dark" disabled={statuses[account.id] === "saving-email"}>{statuses[account.id] === "saving-email" ? "Saving…" : "Update email"}</button>
             </form>
             <form className="admin-user-action" onSubmit={(event) => { event.preventDefault(); savePassword(account); }}>
-              <label><span>New password</span><input type="password" autoComplete="new-password" minLength="12" value={passwordDrafts[account.id] || ""} onChange={(event) => setPasswordDrafts((current) => ({ ...current, [account.id]: event.target.value }))} placeholder="At least 12 characters" /></label>
+              <label><span>New password</span><input type="password" autoComplete="new-password" minLength="4" maxLength="72" value={passwordDrafts[account.id] || ""} onChange={(event) => setPasswordDrafts((current) => ({ ...current, [account.id]: event.target.value }))} placeholder="At least 4 characters" /></label>
               <button type="submit" className="admin-button admin-button-light" disabled={statuses[account.id] === "saving-password"}>{statuses[account.id] === "saving-password" ? "Saving…" : "Reset password"}</button>
             </form>
             {statuses[account.id] && !statuses[account.id].startsWith("saving-") && <p className={statuses[account.id].includes("updated") || statuses[account.id].includes("reset") ? "admin-user-status is-success" : "admin-user-status"} role="status">{statuses[account.id]}</p>}
