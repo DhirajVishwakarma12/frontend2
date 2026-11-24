@@ -1,0 +1,222 @@
+.invoice-home {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  color: #202124;
+  background: #f6f5f2;
+  font-family: Inter, Arial, Helvetica, sans-serif;
+}
+
+.invoice-home-header {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  inset: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 26px clamp(18px, 5vw, 72px);
+}
+
+.invoice-home-brand {
+  color: #49331f;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.invoice-home-kicker {
+  color: #8a755d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+
+.invoice-home-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.invoice-home-admin-link {
+  pointer-events: auto;
+  padding: 8px 12px;
+  border: 1px solid #d8c9b5;
+  border-radius: 999px;
+  color: #49331f;
+  background: rgba(255, 255, 255, .92);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.invoice-home-admin-link:hover {
+  background: #f4eee7;
+}
+
+.invoice-home-content {
+  position: absolute;
+  inset: 0;
+}
+
+.invoice-home-action {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: #292724;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: background .18s ease, transform .18s ease;
+}
+
+.invoice-home-action:hover {
+  background: #f0ece5;
+}
+
+.invoice-home-action:focus-visible {
+  outline: 3px solid #a88b67;
+  outline-offset: 3px;
+}
+
+.invoice-home-action-copy {
+  position: absolute;
+  top: 50%;
+  width: min(36vw, 440px);
+  display: grid;
+  gap: 14px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.invoice-home-action:first-child {
+  z-index: 1;
+  clip-path: polygon(0 0, 58% 0, 42% 100%, 0 100%);
+  justify-content: flex-start;
+}
+
+.invoice-home-action:first-child .invoice-home-action-copy {
+  left: clamp(24px, 8vw, 120px);
+}
+
+.invoice-home-action-primary {
+  justify-content: flex-end;
+  clip-path: polygon(58% 0, 100% 0, 100% 100%, 42% 100%);
+}
+
+.invoice-home-action-primary:hover {
+  background: #604529;
+}
+
+.invoice-home-action-primary .invoice-home-action-copy {
+  right: clamp(24px, 8vw, 120px);
+}
+
+.invoice-home-action-copy small {
+  color: #8a755d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+
+.invoice-home-action-copy strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(32px, 4vw, 54px);
+  font-weight: 500;
+  letter-spacing: -.8px;
+}
+
+.invoice-home-action-copy > span {
+  color: #72706c;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.invoice-home-action-primary {
+  color: #fff;
+  background: #49331f;
+}
+
+.invoice-home-action-primary:hover {
+  background: #604529;
+}
+
+.invoice-home-action-primary .invoice-home-action-copy small,
+.invoice-home-action-primary .invoice-home-action-copy > span {
+  color: #e5d9c9;
+}
+
+.invoice-home-footer {
+  position: absolute;
+  z-index: 2;
+  inset: auto 0 0;
+  pointer-events: none;
+  padding: 18px 20px 20px;
+  color: #9a948c;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 1.1px;
+  text-align: center;
+}
+
+@media (max-width: 650px) {
+  .invoice-home {
+    min-height: 100svh;
+  }
+
+  .invoice-home-header {
+    padding: 20px 18px;
+  }
+
+  .invoice-home-kicker {
+    font-size: 8px;
+  }
+
+  .invoice-home-action {
+    min-height: 100%;
+  }
+
+  .invoice-home-action-copy {
+    width: 38vw;
+    gap: 10px;
+  }
+
+  .invoice-home-action:first-child .invoice-home-action-copy {
+    left: 6vw;
+  }
+
+  .invoice-home-action-primary .invoice-home-action-copy {
+    right: 5vw;
+  }
+
+  .invoice-home-action-copy strong {
+    font-size: clamp(24px, 7vw, 38px);
+  }
+
+  .invoice-home-action-copy > span {
+    font-size: 12px;
+  }
+
+  .invoice-home-action-copy small {
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invoice-home-action {
+    transition: none;
+  }
+}
