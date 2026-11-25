@@ -465,26 +465,30 @@ const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, to
             <EditableText className="customer-address-edit" value={form.customerAddress} onChange={updateField("customerAddress")} multiline error={errors.customerAddress} />
             {[
               ["GSTIN", "customerGstin", form.customerGstin],
-              ["BL No.", "blNo", form.blNo],
-              ["Invoice No", "proformaNo", form.proformaNo],
-              ["Shipper", "shipper", form.shipper],
+              ["Vessel Voy", "vessel", form.vessel],
               ["Port Of Loading", "portLoading", form.portLoading],
               ["Port Of Discharge", "portDischarge", form.portDischarge],
-              ["Place Of Delivery", "placeDelivery", form.placeDelivery],
-              ["Container No./Volume", "containerNo", form.containerNo],
-            ].map(([label, field, value]) => <div className={`invoice-detail-row${label === "Port Of Loading" ? " invoice-row-spaced" : ""}`} key={label}><strong>{label}</strong><span className={label === "Container No./Volume" ? "volume-container-value" : undefined}>{label === "Container No./Volume" ? <><EditableText value={value} onChange={updateField(field)} error={errors[field]} /><span className="invoice-inline-x">/</span><EditableText value={form.volume} onChange={updateField("volume")} numeric error={errors.volume} /></> : <EditableText value={value} onChange={updateField(field)} error={errors[field]} />}</span></div>)}
+              ["Container No.", "containerNo", form.containerNo],
+            ].map(([label, field, value]) => <div className={`invoice-detail-row${label === "Port Of Loading" ? " invoice-row-spaced" : ""}`} key={label}><strong>{label}</strong><span>{label === "Vessel Voy" ? <><EditableText value={value} onChange={updateField(field)} /> <EditableText value={form.voyage} onChange={updateField("voyage")} /></> : <EditableText value={value} onChange={updateField(field)} error={errors[field]} />}</span></div>)}
+            <div className="invoice-detail-row"><strong>Date Of Sailing</strong><span><EditableText value={dateForPrint(form.sailing)} onChange={(value) => updateField("sailing")(value.split("/").reverse().join("-"))} /></span></div>
             <div className="invoice-detail-row invoice-place-row"><strong>Place of Supply</strong><span className="place-of-supply-value"><PlaceOfSupplyPicker code={form.placeOfSupplyCode} name={form.placeOfSupply} places={places} onSelect={updatePlaceOfSupply} /><span className="place-of-supply-print">({form.placeOfSupplyCode}) {form.placeOfSupply}</span></span></div>
           </div>
           <div className="invoice-extra-details">
-            {[["Consignee's Detail", "customerName", form.customerName], ["Date", "date", dateForPrint(form.date)], ["LT Date", "ltDate", dateForPrint(form.ltDate)], ["BL No", "blNo", form.blNo]].map(([label, field, value]) =>
-              <div className="invoice-right-row" key={label}><strong>{label}</strong><span>
-                {field === "date" || field === "ltDate"
-                  ? <EditableText value={value} onChange={(nextValue) => updateField(field)(nextValue.split("/").reverse().join("-"))} error={errors[field]} />
-                  : <EditableText value={value} onChange={updateField(field)} error={errors[field]} />}
-              </span></div>)}
-            <div className="invoice-vessel-block" />
-            <div className="invoice-right-row"><strong>Vessel Voy</strong><span><EditableText value={form.vessel} onChange={updateField("vessel")} /> <EditableText value={form.voyage} onChange={updateField("voyage")} /></span></div>
-            <div className="invoice-right-row invoice-row-spaced"><strong>Prepared By</strong><span><EditableText value={form.preparedBy} onChange={updateField("preparedBy")} /></span></div>
+            <div className="invoice-right-row"><strong>Consignee</strong><span><EditableText value={form.consigneeName || form.customerName} onChange={updateField("consigneeName")} /></span></div>
+            <EditableText className="invoice-right-address" value={form.consigneeAddress || form.customerAddress} onChange={updateField("consigneeAddress")} multiline />
+            <div className="invoice-right-row"><strong>Invoice No</strong><span><EditableText value={form.proformaNo} onChange={updateField("proformaNo")} error={errors.proformaNo} /></span></div>
+            <div className="invoice-right-row"><strong>Invoice Date</strong><span><EditableText value={dateForPrint(form.date)} onChange={(value) => updateField("date")(value.split("/").reverse().join("-"))} error={errors.date} /></span></div>
+            <div className="invoice-right-row"><strong>Container No.</strong><span><EditableText value={form.containerNo} onChange={updateField("containerNo")} error={errors.containerNo} /></span></div>
+            <div className="invoice-right-row"><strong>Volume</strong><span><EditableText value={form.volume} onChange={updateField("volume")} numeric error={errors.volume} /> <span> X </span><EditableText value={form.containerType} onChange={updateField("containerType")} /></span></div>
+            <div className="invoice-detail-divider" />
+            <div className="invoice-right-row"><strong>Shipping Bill No</strong><span><EditableText value={form.shippingBillNo || form.blNo} onChange={updateField("shippingBillNo")} /></span></div>
+            <div className="invoice-right-row"><strong>Shipping Bill Date</strong><span><EditableText value={dateForPrint(form.shippingBillDate || form.ltDate)} onChange={(value) => updateField("shippingBillDate")(value.split("/").reverse().join("-"))} /></span></div>
+            <div className="invoice-or-row">or</div>
+            <div className="invoice-right-row"><strong>BOE No</strong><span><EditableText value={form.boeNo || form.bookingNo} onChange={updateField("boeNo")} /></span></div>
+            <div className="invoice-right-row"><strong>BOE Date</strong><span><EditableText value={dateForPrint(form.boeDate || form.ltDate)} onChange={(value) => updateField("boeDate")(value.split("/").reverse().join("-"))} /></span></div>
+            <div className="invoice-detail-divider" />
+            <div className="invoice-right-row"><strong>Cargo Weight</strong><span><EditableText value={form.cargoWeight} onChange={updateField("cargoWeight")} /></span></div>
+            <div className="invoice-right-row"><strong>CBM</strong><span><EditableText value={form.cbm} onChange={updateField("cbm")} /></span></div>
           </div>
         </section>
 

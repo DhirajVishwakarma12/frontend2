@@ -634,15 +634,15 @@
 
 .customer-address-edit {
   display: block;
-  margin: 0 0 1.5mm 27mm;
-  min-width: calc(100% - 27mm);
+  margin: 0 0 1.5mm 31mm;
+  min-width: calc(100% - 31mm);
   min-height: 16mm;
   line-height: 1.28;
   white-space: pre-line;
 }
 
 .direct-editable-input.customer-address-edit {
-  width: calc(100% - 27mm);
+  width: calc(100% - 31mm);
   min-height: 28mm;
   resize: vertical;
   font-size: 11pt;
@@ -650,7 +650,23 @@
 }
 
 .direct-editable-input.customer-address-edit {
-  width: calc(100% - 27mm);
+  width: calc(100% - 31mm);
+  white-space: pre-wrap;
+}
+
+.invoice-right-address {
+  display: block;
+  margin: 0 0 1.5mm 21mm;
+  min-width: calc(100% - 21mm);
+  min-height: 16mm;
+  line-height: 1.28;
+  white-space: pre-line;
+}
+
+.direct-editable-input.invoice-right-address {
+  width: calc(100% - 21mm);
+  min-height: 24mm;
+  resize: vertical;
   white-space: pre-wrap;
 }
 
@@ -693,7 +709,7 @@
 
 .invoice-detail-row {
   display: grid;
-  grid-template-columns: 27mm minmax(0, 1fr);
+  grid-template-columns: 31mm minmax(0, 1fr);
   margin: 1px 0;
   line-height: 1.22;
   overflow-wrap: anywhere;
@@ -1001,6 +1017,16 @@
   margin: 1px 0;
   line-height: 1.23;
   overflow-wrap: anywhere;
+}
+
+.invoice-detail-divider {
+  margin: 1.5mm 0;
+  border-top: 1px solid #555;
+}
+
+.invoice-or-row {
+  margin: 1px 0 1px 21mm;
+  font-weight: 700;
 }
 
 .invoice-vessel-block {

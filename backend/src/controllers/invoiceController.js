@@ -2,9 +2,9 @@ import mongoose from "mongoose";
 import Invoice from "../models/Invoice.js";
 
 const FORM_FIELDS = [
-  "proformaNo", "blNo", "customerName", "customerGstin", "customerAddress", "placeOfSupply", "placeOfSupplyCode",
+  "proformaNo", "blNo", "customerName", "customerGstin", "customerAddress", "consigneeName", "consigneeAddress", "placeOfSupply", "placeOfSupplyCode",
   "bookingNo", "shipper", "portLoading", "portDischarge", "placeDelivery", "volume", "containerType", "containerNo",
-  "vessel", "voyage", "sailing", "preparedBy", "remarks", "taxMode", "date", "ltDate",
+  "vessel", "voyage", "sailing", "shippingBillNo", "shippingBillDate", "boeNo", "boeDate", "cargoWeight", "cbm", "preparedBy", "remarks", "taxMode", "date", "ltDate",
 ];
 const CHARGE_FIELDS = ["id", "description", "sac", "qty", "rate", "currency", "exchangeRate", "gstRate"];
 
