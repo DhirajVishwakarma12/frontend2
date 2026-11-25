@@ -35,6 +35,7 @@ export async function login(request, response) {
   }
 
   response.cookie(SESSION_COOKIE, createSessionToken(user), cookieOptions);
+  console.info("Session authentication diagnostic", { event: "session-cookie-issued" });
   return response.json({ user: { id: user.id, email: user.email, role: user.role } });
 }
 
@@ -44,6 +45,7 @@ export function currentUser(request, response) {
 
 export function logout(_request, response) {
   response.clearCookie(SESSION_COOKIE, { ...cookieOptions, maxAge: undefined });
+  console.info("Session authentication diagnostic", { event: "session-cookie-cleared" });
   return response.status(204).end();
 }
 
