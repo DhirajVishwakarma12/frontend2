@@ -67,4 +67,4 @@ Workspace data is scoped to the authenticated user's ID. The first successful sa
 
 Users have one of two roles: `user` or `admin`. The configured bootstrap account is created as the admin on first startup. Regular users cannot call the password-change endpoint.
 
-The frontend uses `/api` by default. Vite proxies it to `http://localhost:4000` during development. For a separately hosted frontend, set `VITE_API_URL` to the API origin and `FRONTEND_ORIGIN` to the frontend origin.
+The frontend uses `/api` by default. Vite proxies it to `http://localhost:4000` during development. For a separately hosted frontend, set `VITE_API_URL` to the API origin and `FRONTEND_ORIGIN` to one or more complete frontend origins separated by commas, for example `https://your-project.vercel.app,https://your-preview.vercel.app`.
