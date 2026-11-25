@@ -11,6 +11,10 @@ export const cookieOptions = Object.freeze({
   // The frontend and API are deployed on different hostnames. A cross-site
   // fetch needs SameSite=None; Secure is required by browsers for this mode.
   sameSite: env.isProduction ? "none" : "lax",
+  // Chromium partitions this cookie by the Vercel top-level site when users
+  // block ordinary third-party cookies. Browsers without CHIPS support ignore
+  // the attribute and retain the SameSite=None behavior above.
+  partitioned: env.isProduction,
   path: "/",
   maxAge: SESSION_TTL_SECONDS * 1000,
 });
