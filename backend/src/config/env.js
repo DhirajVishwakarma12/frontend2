@@ -59,7 +59,6 @@ for (const origin of frontendOrigins) {
     if (
       !["http:", "https:"].includes(url.protocol) ||
       url.origin !== origin ||
-      (process.env.NODE_ENV === "production" && url.protocol !== "https:") ||
       url.username ||
       url.password
     ) {
