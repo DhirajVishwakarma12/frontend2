@@ -23,9 +23,6 @@ if (env.trustProxy) {
 
 app.use(helmet());
 
-// Allowed frontend origins
-const allowedOrigins = env.frontendOrigins;
-
 // CORS configuration
 app.use(cors({
   origin(origin, callback) {

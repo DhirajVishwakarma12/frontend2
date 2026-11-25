@@ -11,6 +11,6 @@ export const cookieOptions = Object.freeze({
   // The frontend and API are deployed on different hostnames. A cross-site
   // fetch needs SameSite=None; Secure is required by browsers for this mode.
   sameSite: env.isProduction ? "none" : "lax",
-  path: "/api",
+  path: "/",
   maxAge: SESSION_TTL_SECONDS * 1000,
 });
