@@ -27,45 +27,19 @@ app.use(helmet());
 const allowedOrigins = env.frontendOrigins;
 
 // CORS configuration
-app.use(
-  cors({
-    origin(origin, callback) {
-      // Allow requests without an Origin header
-      if (!origin) {
-        return callback(null, true);
-      }
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || env.frontendOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-      // Validate frontend origin
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      console.error("CORS blocked origin:", origin);
-
-      return callback(
-        new Error(`CORS blocked: ${origin}`)
-      );
-    },
-
-    credentials: true,
-
-    methods: [
-      "GET",
-      "POST",
-      "PUT",
-      "PATCH",
-      "DELETE",
-      "OPTIONS",
-    ],
-
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-    ],
-
-    optionsSuccessStatus: 204,
-  })
-);
+    console.error("CORS blocked origin:", origin);
+    return callback(new Error(`CORS blocked: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 
 // Parse JSON requests
 app.use(
