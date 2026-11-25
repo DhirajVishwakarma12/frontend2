@@ -23,7 +23,7 @@
   padding: 22px 26px;
   border: 1px solid var(--admin-line);
   border-radius: 16px;
-  background: linear-gradient(115deg, #fff, #f8f4ed);
+  background: linear-gradient(115deg, #f6f5f2, #efe9df);
   box-shadow: 0 8px 28px rgba(30, 40, 50, .05);
 }
 
@@ -34,7 +34,7 @@
 }
 
 .admin-dashboard-kicker {
-  color: #84603a;
+  color: #8c704d;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 1.5px;
@@ -44,6 +44,14 @@
   margin: 8px 0 4px;
   font-size: clamp(26px, 3vw, 36px);
   letter-spacing: -.8px;
+}
+
+.admin-button-dark {
+  background: #152a31;
+}
+
+.admin-button-dark:hover {
+  background: #23434b;
 }
 
 .admin-dashboard-header p,

@@ -1,5 +1,12 @@
 const API_BASE = String(import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 const WORKSPACE_DATA_URL = `${API_BASE}/api/workspace-data`;
+const WORKSPACE_CACHE_KEYS = {
+  currencies: "white-star-currency-rates",
+  rates: "white-star-gst-rates",
+  items: "white-star-items",
+  customers: "white-star-customers",
+  places: "white-star-places",
+};
 
 async function request(path = "", options = {}) {
   const response = await fetch(`${WORKSPACE_DATA_URL}${path}`, {
@@ -17,6 +24,15 @@ async function request(path = "", options = {}) {
 
 export function loadWorkspaceData() {
   return request();
+}
+
+export async function preloadWorkspaceData(userId) {
+  const data = await loadWorkspaceData();
+  if (!data.initialized || !userId) return data;
+  Object.entries(WORKSPACE_CACHE_KEYS).forEach(([field, key]) => {
+    window.localStorage.setItem(`${key}:${userId}`, JSON.stringify(data[field]));
+  });
+  return data;
 }
 
 let saveQueue = Promise.resolve();

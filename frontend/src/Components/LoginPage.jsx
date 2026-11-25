@@ -30,10 +30,10 @@ export default function LoginPage({ onLogin }) {
     <main className="login-page">
       <section className="login-story" aria-label="IET LOGISTICS PRIVATE LTD">
         <div className="login-story-inner">
-          <a className="login-brand" href="#login" aria-label="IET LOGISTICS PRIVATE LTD home">
+          <p className="login-brand" href="#login" aria-label="IET LOGISTICS PRIVATE LTD home">
             <span className="login-brand-mark" aria-hidden="true">✦</span>
             <span>IET LOGISTICS PRIVATE LTD</span>
-          </a>
+          </p>
           <div className="login-story-copy">
             <span className="login-kicker">SHIPPING, MADE SIMPLE</span>
             <h1>Every shipment<br />starts with a<br /><em>clear picture.</em></h1>
@@ -57,13 +57,13 @@ export default function LoginPage({ onLogin }) {
           <form className="login-form" onSubmit={handleSubmit} noValidate>
             <label htmlFor="login-email">Work email</label>
             <div className="login-input-wrap">
-              <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="4" width="15" height="12" rx="2"/><path d="m3.5 5 6.5 5.25L16.5 5"/></svg>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="4" width="15" height="12" rx="2" /><path d="m3.5 5 6.5 5.25L16.5 5" /></svg>
               <input id="login-email" type="email" autoComplete="username" placeholder="you@company.com" value={email} onChange={(event) => setEmail(event.target.value)} />
             </div>
 
             <div className="login-password-label"><label htmlFor="login-password">Password</label><button className="login-text-button" type="button" onClick={() => setError("Please contact your workspace administrator to reset your password.")}>Forgot password?</button></div>
             <div className="login-input-wrap">
-              <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.5" y="8.5" width="13" height="9" rx="2"/><path d="M6.5 8.5V6a3.5 3.5 0 0 1 7 0v2.5M10 12v2"/></svg>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.5" y="8.5" width="13" height="9" rx="2" /><path d="M6.5 8.5V6a3.5 3.5 0 0 1 7 0v2.5M10 12v2" /></svg>
               <input id="login-password" type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.target.value)} />
               <button className="login-show-password" type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((visible) => !visible)}>{showPassword ? "Hide" : "Show"}</button>
             </div>

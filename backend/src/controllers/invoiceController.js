@@ -14,11 +14,33 @@ function invalidRequest(message) {
   return error;
 }
 
+function conflict(message) {
+  const error = new Error(message);
+  error.status = 409;
+  return error;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function ensureInvoiceNumberIsAvailable(invoiceNumber, excludedInvoiceId) {
+  const filter = {
+    "form.proformaNo": { $regex: `^${escapeRegExp(invoiceNumber)}$`, $options: "i" },
+  };
+  if (excludedInvoiceId) filter._id = { $ne: excludedInvoiceId };
+  if (await Invoice.exists(filter)) {
+    throw conflict("This invoice number already exists. Open the existing invoice to update it.");
+  }
+}
+
 function normalizeInvoiceData(body) {
   if (!body || !body.form || typeof body.form !== "object" || Array.isArray(body.form) || !Array.isArray(body.charges) || body.charges.length > 200) {
     throw invalidRequest("Invoice data must contain a form and up to 200 charge rows.");
   }
   const form = Object.fromEntries(FORM_FIELDS.map((field) => [field, String(body.form[field] ?? "").slice(0, 5000)]));
+  form.proformaNo = form.proformaNo.trim();
+  if (!form.proformaNo) throw invalidRequest("Invoice number is required.");
   form.taxMode = form.taxMode === "inter" ? "inter" : "intra";
   const charges = body.charges.map((charge) => {
     if (!charge || typeof charge !== "object" || Array.isArray(charge)) {
@@ -74,6 +96,7 @@ export async function getInvoice(request, response, next) {
 export async function createInvoice(request, response, next) {
   try {
     const data = normalizeInvoiceData(request.body);
+    await ensureInvoiceNumberIsAvailable(data.form.proformaNo);
     const invoice = await Invoice.create({ ...data, owner: request.user.id });
     return response.status(201).json({ invoice: serializeInvoice(invoice) });
   } catch (error) {
@@ -87,6 +110,7 @@ export async function updateInvoice(request, response, next) {
     const { invoiceId } = request.params;
     if (!mongoose.isValidObjectId(invoiceId)) return response.status(400).json({ message: "Invalid invoice ID." });
     const data = normalizeInvoiceData(request.body);
+    await ensureInvoiceNumberIsAvailable(data.form.proformaNo, invoiceId);
     const filter = request.user.role === "admin"
       ? { _id: invoiceId }
       : { _id: invoiceId, owner: request.user.id };

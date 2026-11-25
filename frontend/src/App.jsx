@@ -5,6 +5,7 @@ import InvoiceHome from "./Components/InvoiceHome.jsx";
 import LoginPage from "./Components/LoginPage.jsx";
 import AdminDashboard from "./Components/AdminDashboard.jsx";
 import { getCurrentUser, signIn, signOut } from "./services/auth.js";
+import { preloadWorkspaceData } from "./services/workspaceData.js";
 
 function App() {
   const [showIntro, setShowIntro] = useState(true);
@@ -23,7 +24,12 @@ function App() {
     if (showIntro) return undefined;
     let active = true;
     getCurrentUser()
-      .then(({ user }) => {
+      .then(async ({ user }) => {
+        try {
+          await preloadWorkspaceData(user.id);
+        } catch (error) {
+          console.error("Workspace data could not be preloaded.", error);
+        }
         if (active) {
           setCurrentUser(user);
           setIsLoggedIn(true);
@@ -37,6 +43,11 @@ function App() {
 
   const handleLogin = async (email, password) => {
     const { user } = await signIn(email, password);
+    try {
+      await preloadWorkspaceData(user.id);
+    } catch (error) {
+      console.error("Workspace data could not be preloaded.", error);
+    }
     setCurrentUser(user);
     setIsLoggedIn(true);
     setInvoiceMode(null);

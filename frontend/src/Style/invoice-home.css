@@ -1,4 +1,4 @@
-.invoice-home {
+﻿.invoice-home {
   position: relative;
   min-height: 100vh;
   min-height: 100svh;
@@ -6,8 +6,8 @@
   flex-direction: column;
   overflow: hidden;
   padding: 0;
-  color: #202124;
-  background: #f6f5f2;
+  color: #fff;
+  background: #152a31;
   font-family: Inter, Arial, Helvetica, sans-serif;
 }
 
@@ -24,14 +24,14 @@
 }
 
 .invoice-home-brand {
-  color: #49331f;
+  color: #fff;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 1.5px;
 }
 
 .invoice-home-kicker {
-  color: #8a755d;
+  color: #d0ae79;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 1.8px;
@@ -48,8 +48,8 @@
   padding: 8px 12px;
   border: 1px solid #d8c9b5;
   border-radius: 999px;
-  color: #49331f;
-  background: rgba(255, 255, 255, .92);
+  color: #fff;
+  background: rgba(255, 255, 255, .04);
   font: inherit;
   font-size: 10px;
   font-weight: 750;
@@ -57,7 +57,7 @@
 }
 
 .invoice-home-admin-link:hover {
-  background: #f4eee7;
+  background: #23434b;
 }
 
 .invoice-home-content {
@@ -75,19 +75,19 @@
   padding: 0;
   border: 0;
   border-radius: 0;
-  color: #292724;
-  background: #fff;
+  color: #fff;
+  background: #152a31;
   text-align: left;
   cursor: pointer;
   transition: background .18s ease, transform .18s ease;
 }
 
 .invoice-home-action:hover {
-  background: #f0ece5;
+  background: #23434b;
 }
 
 .invoice-home-action:focus-visible {
-  outline: 3px solid #a88b67;
+  outline: 3px solid #d0ae79;
   outline-offset: 3px;
 }
 
@@ -117,7 +117,7 @@
 }
 
 .invoice-home-action-primary:hover {
-  background: #604529;
+  background: #23434b;
 }
 
 .invoice-home-action-primary .invoice-home-action-copy {
@@ -125,7 +125,7 @@
 }
 
 .invoice-home-action-copy small {
-  color: #8a755d;
+  color: #d0ae79;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 1.8px;
@@ -139,23 +139,27 @@
 }
 
 .invoice-home-action-copy > span {
-  color: #72706c;
+  color: #bdc7c9;
   font-size: 14px;
   line-height: 1.6;
 }
 
 .invoice-home-action-primary {
-  color: #fff;
-  background: #49331f;
+  color: #202a31;
+  background: #f6f5f2;
 }
 
 .invoice-home-action-primary:hover {
-  background: #604529;
+  background: #efe9df;
 }
 
 .invoice-home-action-primary .invoice-home-action-copy small,
 .invoice-home-action-primary .invoice-home-action-copy > span {
-  color: #e5d9c9;
+  color: #8c704d;
+}
+
+.invoice-home-action-primary .invoice-home-action-copy strong {
+  color: #202a31;
 }
 
 .invoice-home-footer {
@@ -164,7 +168,7 @@
   inset: auto 0 0;
   pointer-events: none;
   padding: 18px 20px 20px;
-  color: #9a948c;
+  color: #aeb9ba;
   font-size: 9px;
   font-weight: 650;
   letter-spacing: 1.1px;

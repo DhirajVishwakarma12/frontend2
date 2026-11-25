@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'https://frontend2-zat1.onrender.com',
+      '/api': 'http://localhost:3000',
     },
   },
 })

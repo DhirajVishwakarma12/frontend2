@@ -139,6 +139,9 @@
   align-items: center;
   margin-left: auto;
   gap: 9px;
+  max-width: 700px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .page-navigation {
@@ -182,17 +185,26 @@
 }
 
 .invoice-navigation {
-  display: grid;
-  gap: 3px;
-  min-width: 180px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid rgba(214, 183, 131, .3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .05);
   color: #d5dddc;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: .5px;
 }
 
+.invoice-navigation > span {
+  white-space: nowrap;
+}
+
 .invoice-navigation select {
-  width: 100%;
+  width: 155px;
   height: 30px;
   border: 1px solid rgba(214, 183, 131, .38);
   border-radius: 6px;
@@ -693,6 +705,10 @@
 
 @media screen {
   .invoice-row-spaced {
+    column-gap: 2mm;
+  }
+
+  .invoice-right-row {
     column-gap: 2mm;
   }
 }
@@ -1421,6 +1437,7 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+    max-width: none;
   }
 
   .toolbar-actions .btn {
@@ -1433,6 +1450,16 @@
   .page-navigation {
     grid-column: 1 / -1;
     width: 100%;
+  }
+
+  .invoice-navigation {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .invoice-navigation select {
+    flex: 1;
+    width: auto;
   }
 
   .page-nav-select {
@@ -1678,6 +1705,7 @@
   grid-template-columns: 2fr 1fr 1fr 1fr;
   align-items: end;
   gap: 12px;
+  background: rgba(255, 255, 255, .96);
 }
 
 .item-config-actions {
