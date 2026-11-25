@@ -8,7 +8,9 @@ export const TOKEN_AUDIENCE = "billing-system-frontend";
 export const cookieOptions = Object.freeze({
   httpOnly: true,
   secure: env.isProduction,
-  sameSite: "strict",
+  // The frontend and API are deployed on different hostnames. A cross-site
+  // fetch needs SameSite=None; Secure is required by browsers for this mode.
+  sameSite: env.isProduction ? "none" : "lax",
   path: "/api",
   maxAge: SESSION_TTL_SECONDS * 1000,
 });
