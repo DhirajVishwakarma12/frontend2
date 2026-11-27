@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import path from "node:path";
 
 import { env } from "./config/env.js";
+import { connectDatabase } from "./config/database.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
 
 import authRoutes from "./routes/authRoutes.js";
@@ -39,6 +40,27 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
+
+if (process.env.VERCEL === "1") {
+  let databaseInitialization;
+  app.use(async (_request, response, next) => {
+    try {
+      if (!databaseInitialization) {
+        databaseInitialization = connectDatabase().catch((error) => {
+          databaseInitialization = null;
+          throw error;
+        });
+      }
+      await databaseInitialization;
+      next();
+    } catch (error) {
+      console.error("Vercel database initialization failed.", error);
+      if (!response.headersSent) {
+        response.status(503).json({ message: "Billing database is unavailable." });
+      }
+    }
+  });
+}
 
 // Parse JSON requests
 app.use(

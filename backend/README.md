@@ -75,7 +75,7 @@ The frontend uses `/api` by default. Vite proxies it to `http://localhost:4000` 
 
 Deploy this repository as two Vercel projects:
 
-1. Create the backend project with the repository root directory set to `backend`. Vercel detects `api/[...path].js` as the serverless API entry point.
+1. Create the backend project with the repository root directory set to `backend`. Vercel detects the Express app exported from `src/app.js` and routes API requests through it.
 2. Add these backend environment variables in Vercel (do not commit their values):
    - `NODE_ENV=production`
    - `MONGODB_URI` — the production MongoDB connection string
