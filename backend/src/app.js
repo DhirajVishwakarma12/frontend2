@@ -3,6 +3,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import express from "express";
 import helmet from "helmet";
+import mongoose from "mongoose";
+import path from "node:path";
 
 import { env } from "./config/env.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
@@ -29,9 +31,9 @@ app.use(cors({
     if (!origin || env.frontendOrigins.includes(origin)) {
       return callback(null, true);
     }
-
-    console.error("CORS blocked origin:", origin);
-    return callback(new Error(`CORS blocked: ${origin}`));
+    const error = new Error("Origin not allowed.");
+    error.status = 403;
+    return callback(error);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -51,9 +53,10 @@ app.use(cookieParser());
 
 // Health check
 app.get("/api/health", (_request, response) => {
-  response.status(200).json({
-    status: "ok",
-    message: "Billing API is running",
+  const databaseConnected = mongoose.connection.readyState === 1;
+  response.status(databaseConnected ? 200 : 503).json({
+    status: databaseConnected ? "ok" : "unavailable",
+    message: databaseConnected ? "Billing API is running" : "Billing database is unavailable",
   });
 });
 
@@ -62,6 +65,17 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/workspace-data", workspaceDataRoutes);
 app.use("/api/invoices", invoiceRoutes);
+
+app.use("/api", notFound);
+
+if (env.frontendDistDir) {
+  app.use(express.static(env.frontendDistDir));
+  app.get(/.*/, (_request, response, next) => {
+    response.sendFile(path.join(env.frontendDistDir, "index.html"), (error) => {
+      if (error) next(error);
+    });
+  });
+}
 
 // Handle unknown routes
 app.use(notFound);

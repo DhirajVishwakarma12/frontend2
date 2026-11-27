@@ -4,7 +4,7 @@ import "dotenv/config";
 const port = Number(process.env.PORT || 4000);
 
 const adminEmail = String(
-  process.env.ADMIN_EMAIL || ""
+  process.env.ADMIN_EMAIL || "admin@gmail.com"
 ).trim().toLowerCase();
 
 const adminPasswordHash = String(
@@ -78,6 +78,8 @@ export const env = Object.freeze({
   mongoUri,
   jwtSecret,
   frontendOrigins,
+  frontendDistDir: String(process.env.FRONTEND_DIST_DIR || "").trim(),
   isProduction: process.env.NODE_ENV === "production",
+  isDesktop: process.env.APP_DESKTOP === "true",
   trustProxy: process.env.TRUST_PROXY === "true",
 });

@@ -11,7 +11,7 @@ const blankCustomer = () => ({
   phone: "",
 });
 
-export default function CustomersPage({ customers, onChange, onUseCustomer, onSaveCustomers }) {
+export default function CustomersPage({ customers, onChange, onUseCustomer, onSaveCustomers, directoryName = "Consignee" }) {
   const [message, setMessage] = useState("");
   const pendingCustomerFocus = useRef(null);
 
@@ -47,13 +47,13 @@ export default function CustomersPage({ customers, onChange, onUseCustomer, onSa
       <section className="management-page">
         <div className="management-heading">
           <div>
-            <span className="section-kicker">CUSTOMERS</span>
-            <h2>Customer directory</h2>
-            <p>Save customer details and reuse them on proforma invoices.</p>
+            <span className="section-kicker">{directoryName.toUpperCase()} DIRECTORY</span>
+            <h2>{directoryName} directory</h2>
+            <p>Save {directoryName.toLowerCase()} details and reuse them on proforma invoices.</p>
           </div>
           <div className="management-heading-actions">
             <SaveButton onSave={onSaveCustomers} revision={JSON.stringify(customers)} />
-            <button type="button" className="btn btn-primary" onClick={addCustomer}>Add customer</button>
+            <button type="button" className="btn btn-primary" onClick={addCustomer}>Add {directoryName.toLowerCase()}</button>
           </div>
         </div>
         {message && <p role="status" className="settings-description">{message}</p>}
@@ -61,7 +61,7 @@ export default function CustomersPage({ customers, onChange, onUseCustomer, onSa
           {customers.map((customer) => (
             <article className="catalog-card customer-config-card" key={customer.id}>
               <label className="bill-field customer-name-field">
-                <span className="bill-field-label">Customer name</span>
+                <span className="bill-field-label">{directoryName} name</span>
                 <input id={`customer-name-${customer.id}`} value={customer.name} onChange={(event) => updateCustomer(customer.id, "name", event.target.value)} onKeyDown={handleFieldKeyDown} />
               </label>
               <label className="bill-field">
@@ -86,7 +86,7 @@ export default function CustomersPage({ customers, onChange, onUseCustomer, onSa
               </div>
             </article>
           ))}
-          {customers.length === 0 && <p className="empty-state">No customers yet. Add a customer to start your directory.</p>}
+          {customers.length === 0 && <p className="empty-state">No {directoryName.toLowerCase()}s yet. Add one to start your directory.</p>}
         </div>
       </section>
     </div>

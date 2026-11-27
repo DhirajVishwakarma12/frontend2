@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Billing System Setup</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Segoe UI", Arial, sans-serif;
+        color: #202a31;
+        background: #f3f5f4;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 34px; }
+      main {
+        width: min(100%, 620px);
+        margin: 0 auto;
+        padding: 30px;
+        border: 1px solid #dfe5e2;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 12px 32px rgba(24, 42, 48, .08);
+      }
+      .kicker {
+        color: #9c794b;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+      }
+      h1 { margin: 10px 0 8px; font: 400 30px Georgia, serif; }
+      .intro, .note { color: #68757b; font-size: 13px; line-height: 1.55; }
+      form { display: grid; gap: 15px; margin-top: 23px; }
+      label { display: grid; gap: 7px; color: #35414a; font-size: 12px; font-weight: 650; }
+      input {
+        width: 100%;
+        min-height: 42px;
+        padding: 9px 11px;
+        border: 1px solid #cbd4d1;
+        border-radius: 6px;
+        color: #202a31;
+        background: #fff;
+        font: 13px "Segoe UI", Arial, sans-serif;
+      }
+      input:focus { border-color: #9c794b; outline: 3px solid rgba(176, 138, 86, .16); }
+      .note { margin: 0; padding: 11px 13px; border-radius: 7px; background: #f5f7f6; }
+      button {
+        min-height: 44px;
+        border: 0;
+        border-radius: 6px;
+        color: #fff;
+        background: #172f36;
+        font: 650 13px "Segoe UI", Arial, sans-serif;
+        cursor: pointer;
+      }
+      button:disabled { opacity: .65; cursor: wait; }
+      #status { min-height: 18px; margin: 0; color: #a63a32; font-size: 12px; }
+      @media (max-width: 640px) {
+        body { padding: 12px; }
+        main { padding: 22px 18px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="kicker">IET Logistics</span>
+      <h1>Connect your billing workspace</h1>
+      <p class="intro">Enter your hosted MongoDB connection and first admin account. The connection settings are encrypted for this Windows user and are not stored inside the installer.</p>
+      <form id="setup-form">
+        <label>
+          Hosted MongoDB URI
+          <input id="mongo-uri" name="mongoUri" type="text" required autocomplete="off" spellcheck="false" placeholder="mongodb+srv://..." />
+        </label>
+        <label>
+          Initial admin email
+          <input id="admin-email" name="adminEmail" type="email" required autocomplete="email" placeholder="admin@company.com" />
+        </label>
+        <label>
+          Initial admin password
+          <input id="admin-password" name="adminPassword" type="password" minlength="12" maxlength="72" autocomplete="new-password" placeholder="At least 12 characters" />
+        </label>
+        <p class="note">The password is used only if this database has no admin yet. Existing database accounts keep their current passwords. Leave it blank when updating settings.</p>
+        <button id="save-button" type="submit">Save settings and start</button>
+        <p id="status" role="status" aria-live="polite"></p>
+      </form>
+    </main>
+    <script src="./setup.js"></script>
+  </body>
+</html>

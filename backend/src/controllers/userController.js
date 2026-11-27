@@ -38,7 +38,11 @@ export async function createUser(request, response) {
   }
 }
 
-export async function listUsers(_request, response) {
+export async function listUsers(request, response) {
+  if (request.user.role !== "admin") {
+    return response.json({ users: [] });
+  }
+
   const users = await User.find({ role: "user" }).select("email role createdAt").sort({ createdAt: -1 }).lean();
   return response.json({ users: users.map((user) => ({
     id: String(user._id),
@@ -58,7 +62,7 @@ export async function changeUserEmail(request, response) {
     const user = await User.findOneAndUpdate(
       { _id: userId, role: "user" },
       { $set: { email: email.trim().toLowerCase() } },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     ).select("email role");
     if (!user) return response.status(404).json({ message: "User not found." });
     return response.json({ user: { id: user.id, email: user.email, role: user.role } });

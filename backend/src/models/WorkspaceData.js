@@ -59,6 +59,7 @@ const workspaceDataSchema = new mongoose.Schema(
     rates: { type: [{ type: Number, min: 0, max: 100 }], default: [] },
     items: { type: [itemSchema], default: [] },
     customers: { type: [customerSchema], default: [] },
+    buyers: { type: [customerSchema], default: [] },
     places: { type: [placeSchema], default: [] },
   },
   { timestamps: true, versionKey: false, strict: "throw" },

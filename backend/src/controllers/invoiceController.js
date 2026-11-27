@@ -4,7 +4,7 @@ import Invoice from "../models/Invoice.js";
 const FORM_FIELDS = [
   "proformaNo", "blNo", "customerName", "customerGstin", "customerAddress", "consigneeName", "consigneeAddress", "placeOfSupply", "placeOfSupplyCode",
   "bookingNo", "shipper", "portLoading", "portDischarge", "placeDelivery", "volume", "containerType", "containerNo",
-  "vessel", "voyage", "sailing", "shippingBillNo", "shippingBillDate", "boeNo", "boeDate", "cargoWeight", "cbm", "preparedBy", "remarks", "taxMode", "date", "ltDate",
+  "vessel", "voyage", "vesselVoyage", "sailing", "shippingDocumentType", "shippingBillNo", "shippingBillDate", "boeNo", "boeDate", "cargoWeight", "cbm", "preparedBy", "remarks", "taxMode", "date", "ltDate",
 ];
 const CHARGE_FIELDS = ["id", "description", "sac", "qty", "rate", "currency", "exchangeRate", "gstRate"];
 
@@ -114,7 +114,7 @@ export async function updateInvoice(request, response, next) {
     const filter = request.user.role === "admin"
       ? { _id: invoiceId }
       : { _id: invoiceId, owner: request.user.id };
-    const invoice = await Invoice.findOneAndUpdate(filter, { $set: data }, { new: true, runValidators: true })
+    const invoice = await Invoice.findOneAndUpdate(filter, { $set: data }, { returnDocument: "after", runValidators: true })
       .populate("owner", "email");
     if (!invoice) return response.status(404).json({ message: "Invoice not found." });
     return response.json({ invoice: serializeInvoice(invoice) });

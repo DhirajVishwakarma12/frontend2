@@ -5,7 +5,7 @@ import { requireRole } from "../middleware/requireRole.js";
 
 const router = Router();
 
-router.get("/", requireSession, requireRole("admin"), listUsers);
+router.get("/", requireSession, listUsers);
 router.post("/", requireSession, requireRole("admin"), createUser);
 router.patch("/:userId/email", requireSession, requireRole("admin"), changeUserEmail);
 router.patch("/:userId/password", requireSession, requireRole("admin"), changeUserPassword);

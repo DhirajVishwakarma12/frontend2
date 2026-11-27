@@ -4,9 +4,13 @@ import { env } from "./config/env.js";
 
 await connectDatabase();
 
-const server = app.listen(env.port, () => {
-  console.info(`Billing API listening on port ${env.port}.`);
-});
+const onListening = () => {
+  console.log(`Backend server is running on port ${env.port}.`);
+};
+
+const server = env.isDesktop
+  ? app.listen(env.port, "127.0.0.1", onListening)
+  : app.listen(env.port, onListening);
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.once(signal, () => {

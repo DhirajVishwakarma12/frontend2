@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "../Style/bill.css";
 import PreviewPage from "./previwpage.jsx";
 import CurrencyPage from "../pages/currency.jsx";
@@ -19,10 +19,12 @@ const COMPANY = {
   gstin: "27AADCV4578P1ZF",
   stateCode: "27",
   bank: {
-    beneficiary: "IET LOGISTICS PRIVATE LTD",
-    name: "HDFC BANK CBD Belapur",
-    account: "99999833560055",
-    ifsc: "HDFC0002860",
+    beneficiary: "IET LOGISTICS PRIVATE LIMITED",
+    name: "ICICI BANK",
+    address: "GF Vrindavan Bldg No: 15, Shivdham Complex, Dindoshi, Malad East, Mumbai 400097",
+    account: "028105009199",
+    ifsc: "ICIC0000281",
+    branch: "Goregaon East Branch",
   },
 };
 
@@ -53,7 +55,9 @@ const INITIAL_FORM = {
   containerNo: "",
   vessel: "",
   voyage: "",
+  vesselVoyage: "",
   sailing: "",
+  shippingDocumentType: "shippingBill",
   shippingBillNo: "",
   shippingBillDate: "",
   boeNo: "",
@@ -65,41 +69,18 @@ const INITIAL_FORM = {
   taxMode: "intra",
 };
 
-const createInitialForm = () => {
+function normalizeInvoiceForm(form) {
+  const savedForm = form || {};
+  const isLegacyInvoice = !savedForm.shippingDocumentType;
   return {
     ...INITIAL_FORM,
-    proformaNo: "MSCU123456789",
-    customerName: INITIAL_CUSTOMERS[0].name,
-    customerGstin: INITIAL_CUSTOMERS[0].gstin,
-    customerAddress: INITIAL_CUSTOMERS[0].address,
-    consigneeName: INITIAL_CUSTOMERS[0].name,
-    consigneeAddress: INITIAL_CUSTOMERS[0].address,
-    placeOfSupply: "Jammu & Kashmir",
-    placeOfSupplyCode: "01",
-    blNo: "NHAVA/SB/2026/1234",
-    bookingNo: "DUBAI/BOE/2026/5678",
-    shipper: "IET LOGISTICS PRIVATE LIMITED",
-    portLoading: "NHAVA SHEVA, INDIA",
-    portDischarge: "DUBAI, UAE",
-    placeDelivery: "DUBAI, UAE",
-    volume: "1",
-    containerType: "20 FT",
-    containerNo: "MSCU1234567",
-    vessel: "MSC EXAMPLE",
-    voyage: "V. 026E",
-    sailing: "2026-11-25",
-    shippingBillNo: "NHAVA/SB/2026/1234",
-    shippingBillDate: "2026-11-25",
-    boeNo: "DUBAI/BOE/2026/5678",
-    boeDate: "2026-11-25",
-    cargoWeight: "18,500.000 KGS",
-    cbm: "32.500 CBM",
-    preparedBy: "Sales Team",
-    remarks: "Demo invoice — sample data for preview. Please replace before use.",
-    date: "2026-11-25",
-    ltDate: "2026-11-25",
+    ...savedForm,
+    consigneeName: savedForm.consigneeName || (isLegacyInvoice ? savedForm.customerName : "") || "",
+    consigneeAddress: savedForm.consigneeAddress || (isLegacyInvoice ? savedForm.customerAddress : "") || "",
+    vesselVoyage: savedForm.vesselVoyage || [savedForm.vessel, savedForm.voyage].filter(Boolean).join(" "),
+    shippingDocumentType: savedForm.shippingDocumentType || "shippingBill",
   };
-};
+}
 
 const createNewInvoiceForm = () => {
   const today = getCurrentDate();
@@ -131,11 +112,6 @@ const INITIAL_CHARGES = [
   { id: 6, description: "SEAWAY BL CHARGES", sac: "996799", qty: "1", rate: "1500", currency: "INR", exchangeRate: "1", gstRate: "18" },
 ];
 
-const createInitialCharges = () => INITIAL_CHARGES.map((charge, index) => ({
-  ...charge,
-  id: Date.now() + index,
-}));
-
 const CURRENCY_STORAGE_KEY = "white-star-currency-rates";
 const DEFAULT_CURRENCIES = [
   { code: "INR", name: "Indian Rupee", inrValue: "1" },
@@ -146,6 +122,7 @@ const GST_RATE_STORAGE_KEY = "white-star-gst-rates";
 const ITEMS_STORAGE_KEY = "white-star-items";
 const PLACES_STORAGE_KEY = "white-star-places";
 const CUSTOMERS_STORAGE_KEY = "white-star-customers";
+const BUYERS_STORAGE_KEY = "white-star-buyers";
 const INITIAL_CUSTOMERS = [{
   id: 1,
   name: "IET LOGISTICS PRIVATE LIMITED",
@@ -162,7 +139,8 @@ const WORKSPACE_PAGES = [
   { id: "currencies", label: "Currencies" },
   { id: "rates", label: "Rates" },
   { id: "items", label: "Items" },
-  { id: "customers", label: "Customers" },
+  { id: "consignees", label: "Consignees" },
+  { id: "buyers", label: "Buyers" },
   { id: "place-of-supply", label: "Place of Supply" },
 ];
 
@@ -289,45 +267,98 @@ function invoiceFileName(invoice, index) {
     .replace(/[\\/:*?"<>|]/g, "-")
     .replace(/\s+/g, " ")
     .slice(0, 80);
-  return [safePart(invoiceLabel(invoice, index), `Invoice ${index + 1}`), safePart(form.customerName, "Customer"), safePart(form.date, "Date")].join("-");
+  return [safePart(invoiceLabel(invoice, index), `Invoice ${index + 1}`), safePart(form.customerName, "Buyer"), safePart(form.date, "Date")].join("-");
+}
+
+function uniqueInvoicePdfFileName(invoice, index, usedNames) {
+  const baseName = invoiceFileName(invoice, index);
+  let name = baseName;
+  let suffix = 2;
+  while (usedNames.has(name.toLocaleLowerCase())) {
+    name = `${baseName}-${suffix}`;
+    suffix += 1;
+  }
+  usedNames.add(name.toLocaleLowerCase());
+  return `${name}.pdf`;
+}
+
+function downloadBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.style.display = "none";
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function waitForInvoiceImages(invoicePage) {
+  return Promise.all(Array.from(invoicePage.querySelectorAll("img")).map((image) => {
+    if (image.complete) {
+      if (image.naturalWidth > 0) return Promise.resolve();
+      return Promise.reject(new Error(`Invoice image could not be loaded: ${image.alt || image.src}`));
+    }
+    return new Promise((resolve, reject) => {
+      image.addEventListener("load", resolve, { once: true });
+      image.addEventListener("error", () => reject(new Error(`Invoice image could not be loaded: ${image.alt || image.src}`)), { once: true });
+    });
+  }));
+}
+
+async function createInvoicePdfBlob(invoicePage, title, html2canvas, jsPDF) {
+  const canvas = await html2canvas(invoicePage, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: "#ffffff",
+    onclone: (clonedDocument) => {
+      Array.from(clonedDocument.styleSheets).forEach((styleSheet) => {
+        if (styleSheet.href && new URL(styleSheet.href, clonedDocument.baseURI).origin !== clonedDocument.location.origin) return;
+        Array.from(styleSheet.cssRules).forEach((rule) => {
+          if (!rule.media) return;
+          const media = rule.media.mediaText.trim().toLowerCase();
+          if (media === "print") rule.media.mediaText = "all";
+          if (media === "screen") rule.media.mediaText = "not all";
+        });
+      });
+    },
+  });
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const scale = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
+  const imageWidth = canvas.width * scale;
+  const imageHeight = canvas.height * scale;
+  pdf.setProperties({ title });
+  pdf.addImage(
+    canvas.toDataURL("image/jpeg", 0.96),
+    "JPEG",
+    (pageWidth - imageWidth) / 2,
+    (pageHeight - imageHeight) / 2,
+    imageWidth,
+    imageHeight,
+    undefined,
+    "FAST",
+  );
+  const blob = pdf.output("blob");
+  canvas.width = 0;
+  canvas.height = 0;
+  return blob;
 }
 
 function normalizeInvoiceNumber(value) {
   return String(value || "").trim().toLocaleLowerCase();
 }
 
-function escapeInvoiceHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    "\"": "&quot;",
-    "'": "&#39;",
-  }[character]));
-}
-
-function invoiceExportHtml(invoice) {
-  const form = invoice.form || {};
-  const chargeRows = (invoice.charges || []).map((charge, index) => `\n    <tr><td>${index + 1}</td><td>${escapeInvoiceHtml(charge.description)}</td><td>${escapeInvoiceHtml(charge.sac)}</td><td>${escapeInvoiceHtml(charge.qty)}</td><td>${escapeInvoiceHtml(charge.currency)}</td><td>${escapeInvoiceHtml(charge.rate)}</td></tr>`).join("");
-  return `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><title>${escapeInvoiceHtml(invoiceLabel(invoice, 0))}</title>\n<style>body{margin:0;padding:32px;color:#202a31;background:#edf1ef;font:14px Arial,sans-serif}.invoice{max-width:920px;margin:auto;padding:40px;background:#fff;box-shadow:0 2px 12px #0002}h1{margin:0;color:#152a31;font:32px Georgia,serif}h2{margin:28px 0 10px;font-size:16px}.company{color:#b08a56;font-weight:700;letter-spacing:1px}.details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px}.details p{margin:0}.label{color:#68757b;font-size:11px;font-weight:700;text-transform:uppercase}table{width:100%;border-collapse:collapse;margin-top:14px}th,td{padding:9px;border:1px solid #d7dfdc;text-align:left}th{background:#152a31;color:#fff}@media print{body{padding:0;background:#fff}.invoice{max-width:none;box-shadow:none}}</style>\n</head><body><main class="invoice"><p class="company">IET LOGISTICS PRIVATE LTD</p><h1>${escapeInvoiceHtml(invoiceLabel(invoice, 0))}</h1><h2>Invoice details</h2><section class="details"><p><span class="label">Customer</span><br>${escapeInvoiceHtml(form.customerName)}</p><p><span class="label">Invoice date</span><br>${escapeInvoiceHtml(form.date)}</p><p><span class="label">GSTIN</span><br>${escapeInvoiceHtml(form.customerGstin)}</p><p><span class="label">BL No.</span><br>${escapeInvoiceHtml(form.blNo)}</p><p><span class="label">Shipper</span><br>${escapeInvoiceHtml(form.shipper)}</p><p><span class="label">Place of supply</span><br>${escapeInvoiceHtml(form.placeOfSupply)}</p></section><h2>Charges</h2><table><thead><tr><th>#</th><th>Description</th><th>SAC</th><th>Qty</th><th>Currency</th><th>Rate</th></tr></thead><tbody>${chargeRows}</tbody></table></main></body></html>`;
-}
-
-function invoicesExportHtml(invoices) {
-  const pages = invoices.map((invoice) => {
-    const form = invoice.form || {};
-    const chargeRows = (invoice.charges || []).map((charge, index) => `<tr><td>${index + 1}</td><td>${escapeInvoiceHtml(charge.description)}</td><td>${escapeInvoiceHtml(charge.sac)}</td><td>${escapeInvoiceHtml(charge.qty)}</td><td>${escapeInvoiceHtml(charge.currency)}</td><td>${escapeInvoiceHtml(charge.rate)}</td></tr>`).join("");
-    return `<main class="invoice"><p class="company">IET LOGISTICS PRIVATE LTD</p><h1>${escapeInvoiceHtml(invoiceLabel(invoice, 0))}</h1><h2>Invoice details</h2><section class="details"><p><span class="label">Customer</span><br>${escapeInvoiceHtml(form.customerName)}</p><p><span class="label">Invoice date</span><br>${escapeInvoiceHtml(form.date)}</p><p><span class="label">GSTIN</span><br>${escapeInvoiceHtml(form.customerGstin)}</p><p><span class="label">BL No.</span><br>${escapeInvoiceHtml(form.blNo)}</p><p><span class="label">Shipper</span><br>${escapeInvoiceHtml(form.shipper)}</p><p><span class="label">Place of supply</span><br>${escapeInvoiceHtml(form.placeOfSupply)}</p></section><h2>Charges</h2><table><thead><tr><th>#</th><th>Description</th><th>SAC</th><th>Qty</th><th>Currency</th><th>Rate</th></tr></thead><tbody>${chargeRows}</tbody></table></main>`;
-  }).join("");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Invoices</title><style>body{margin:0;padding:24px;color:#202a31;background:#fff;font:14px Arial,sans-serif}.invoice{max-width:920px;margin:0 auto;padding:32px;background:#fff;page-break-after:always;break-after:page}h1{margin:0;color:#152a31;font:32px Georgia,serif}h2{margin:28px 0 10px;font-size:16px}.company{color:#b08a56;font-weight:700;letter-spacing:1px}.details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px}.details p{margin:0}.label{color:#68757b;font-size:11px;font-weight:700;text-transform:uppercase}table{width:100%;border-collapse:collapse;margin-top:14px}th,td{padding:9px;border:1px solid #d7dfdc;text-align:left}th{background:#152a31;color:#fff}@media print{body{padding:0}.invoice{max-width:none;padding:16px}}</style></head><body>${pages}</body></html>`;
-}
-
 export default function ProformaInvoice({ mode = "view", onHome, onLogout, user, invoiceId }) {
   const allowLegacyData = user?.role === "admin";
-  const [form, setForm] = useState(() => createInitialForm());
-  const [charges, setCharges] = useState(() => createInitialCharges());
+  const [form, setForm] = useState(() => createNewInvoiceForm());
+  const [charges, setCharges] = useState(() => createEmptyCharge());
   const pendingDescriptionFocus = useRef(null);
   const exportQueueRef = useRef(null);
   const originalInvoiceRef = useRef(null);
+  const printInProgressRef = useRef(false);
   const [page, setPage] = useState("invoice");
   const [activeInvoiceId, setActiveInvoiceId] = useState(invoiceId || null);
   const [invoiceReady, setInvoiceReady] = useState(false);
@@ -335,6 +366,8 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
   const [savedInvoices, setSavedInvoices] = useState([]);
   const [invoiceExportStatus, setInvoiceExportStatus] = useState("");
   const [exportingInvoices, setExportingInvoices] = useState(false);
+  const [invoicePrintStatus, setInvoicePrintStatus] = useState("");
+  const invoiceBusy = exportingInvoices || Boolean(invoicePrintStatus);
   const [workspaceDataReady, setWorkspaceDataReady] = useState(false);
   const [currencySettings, setCurrencySettings] = useState(() => loadCurrencySettings(user?.id, allowLegacyData));
   const currencies = currencySettings.map((currency) => currency.code);
@@ -346,6 +379,7 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
   })));
   const [places, setPlaces] = useState(() => loadStoredList(PLACES_STORAGE_KEY, STATES, user?.id, allowLegacyData));
   const [customers, setCustomers] = useState(() => loadCustomers(user?.id, allowLegacyData));
+  const [buyers, setBuyers] = useState(() => loadStoredList(BUYERS_STORAGE_KEY, [], user?.id, allowLegacyData));
   const [errors, setErrors] = useState({});
 
   const handlePageSelection = async (value) => {
@@ -365,7 +399,7 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
     if (!nextInvoiceId || nextInvoiceId === activeInvoiceId) return;
     try {
       const { invoice } = await getInvoice(nextInvoiceId);
-      setForm(invoice.form);
+      setForm(normalizeInvoiceForm(invoice.form));
       setCharges(invoice.charges);
       setActiveInvoiceId(invoice.id);
       setInvoiceReady(true);
@@ -374,6 +408,18 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
       setInvoiceSaveError(`Invoice could not be loaded: ${error.message}`);
     }
   };
+
+  const finishInvoiceExport = useCallback(() => {
+    exportQueueRef.current = null;
+    const original = originalInvoiceRef.current;
+    originalInvoiceRef.current = null;
+    if (original) {
+      setForm(original.form);
+      setCharges(original.charges);
+      setActiveInvoiceId(original.activeInvoiceId);
+    }
+    setExportingInvoices(false);
+  }, []);
 
   const exportAllInvoices = async () => {
     setInvoiceExportStatus("");
@@ -385,61 +431,88 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
         setExportingInvoices(false);
         return;
       }
+      const [{ default: html2canvas }, { default: JSZip }, { jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jszip"),
+        import("jspdf"),
+      ]);
       originalInvoiceRef.current = { form, charges, activeInvoiceId };
-      exportQueueRef.current = { invoices, index: 0 };
-      setForm(invoices[0].form);
-      setCharges(invoices[0].charges);
+      exportQueueRef.current = {
+        invoices,
+        index: 0,
+        zip: new JSZip(),
+        usedFileNames: new Set(),
+        html2canvas,
+        jsPDF,
+      };
+      setInvoiceExportStatus(`Preparing ${invoices.length} invoice PDFs…`);
+      setForm(normalizeInvoiceForm(invoices[0].form));
+      setCharges(invoices[0].charges || []);
       setActiveInvoiceId(invoices[0].id);
     } catch (error) {
-      if (error.name !== "AbortError") setInvoiceExportStatus(error.message || "Invoices could not be exported.");
+      console.error("Invoices could not be loaded for export.", error);
+      setInvoiceExportStatus(error.message || "Invoices could not be exported.");
       setExportingInvoices(false);
     }
   };
 
   useEffect(() => {
-    if (!exportQueueRef.current) return undefined;
-    const { invoices, index } = exportQueueRef.current;
-    if (activeInvoiceId !== invoices[index]?.id) return undefined;
-    const previousTitle = document.title;
-    document.title = `${invoiceFileName(invoices[index], index)}.pdf`;
-    const timer = window.setTimeout(() => window.print(), 250);
+    const queue = exportQueueRef.current;
+    const invoice = queue?.invoices[queue.index];
+    if (!invoice || activeInvoiceId !== invoice.id) return undefined;
+    let cancelled = false;
+    const exportCurrentInvoice = async () => {
+      setInvoiceExportStatus(`Exporting invoice ${queue.index + 1} of ${queue.invoices.length}…`);
+      try {
+        if (document.fonts?.ready) await document.fonts.ready;
+        await new Promise((resolve) => window.requestAnimationFrame(resolve));
+        if (cancelled) return;
+        const invoicePage = document.querySelector(".invoice-page");
+        if (!invoicePage) throw new Error("The invoice preview is not available.");
+        await waitForInvoiceImages(invoicePage);
+        if (cancelled) return;
+        const fileName = invoiceFileName(invoice, queue.index);
+        const pdfBlob = await createInvoicePdfBlob(invoicePage, fileName, queue.html2canvas, queue.jsPDF);
+        if (cancelled) return;
+        const invoiceFolder = queue.zip.folder("Invoices");
+        if (!invoiceFolder) throw new Error("Could not create the invoice folder in the ZIP archive.");
+        invoiceFolder.file(uniqueInvoicePdfFileName(invoice, queue.index, queue.usedFileNames), pdfBlob);
+        queue.index += 1;
+        if (queue.index < queue.invoices.length) {
+          const nextInvoice = queue.invoices[queue.index];
+          setForm(normalizeInvoiceForm(nextInvoice.form));
+          setCharges(nextInvoice.charges || []);
+          setActiveInvoiceId(nextInvoice.id);
+          return;
+        }
+        const zipBlob = await queue.zip.generateAsync({ type: "blob" });
+        if (cancelled) return;
+        const zipName = `Invoices-${new Date().toISOString().slice(0, 10)}.zip`;
+        downloadBlob(zipBlob, zipName);
+        const pdfLabel = queue.invoices.length === 1 ? "invoice PDF" : "invoice PDFs";
+        setInvoiceExportStatus(`Exported ${queue.invoices.length} ${pdfLabel} to ${zipName}.`);
+        finishInvoiceExport();
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Invoice export failed.", error);
+        setInvoiceExportStatus(error.message || "Invoices could not be exported.");
+        finishInvoiceExport();
+      }
+    };
+    const timer = window.setTimeout(() => {
+      void exportCurrentInvoice();
+    }, 100);
     return () => {
       window.clearTimeout(timer);
-      document.title = previousTitle;
+      cancelled = true;
     };
-  }, [activeInvoiceId, form, charges]);
-
-  useEffect(() => {
-    const handleExportPrintFinished = () => {
-      const queue = exportQueueRef.current;
-      if (!queue) return;
-      queue.index += 1;
-      if (queue.index < queue.invoices.length) {
-        const nextInvoice = queue.invoices[queue.index];
-        setForm(nextInvoice.form);
-        setCharges(nextInvoice.charges);
-        setActiveInvoiceId(nextInvoice.id);
-        return;
-      }
-      exportQueueRef.current = null;
-      const original = originalInvoiceRef.current;
-      originalInvoiceRef.current = null;
-      if (original) {
-        setForm(original.form);
-        setCharges(original.charges);
-        setActiveInvoiceId(original.activeInvoiceId);
-      }
-      setExportingInvoices(false);
-    };
-    window.addEventListener("afterprint", handleExportPrintFinished);
-    return () => window.removeEventListener("afterprint", handleExportPrintFinished);
-  }, []);
+  }, [activeInvoiceId, form, charges, finishInvoiceExport]);
 
   useEffect(() => {
     let active = true;
     const hydrate = (invoice) => {
       if (!active) return;
-      setForm(invoice.form);
+      setForm(normalizeInvoiceForm(invoice.form));
       setCharges(invoice.charges);
       setActiveInvoiceId(invoice.id);
       setInvoiceReady(true);
@@ -473,6 +546,7 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
           setGstRates(data.rates);
           setItems(data.items.map((item) => ({ ...item, id: String(item.id) })));
           setCustomers(data.customers.map((customer) => ({ ...customer, id: String(customer.id) })));
+          setBuyers((data.buyers || []).map((buyer) => ({ ...buyer, id: String(buyer.id) })));
           setPlaces(data.places);
         }
         setWorkspaceDataReady(true);
@@ -491,6 +565,7 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
       rates: gstRates,
       items: items.map((item) => ({ ...item, id: String(item.id) })),
       customers: customers.map((customer) => ({ ...customer, id: String(customer.id) })),
+      buyers: buyers.map((buyer) => ({ ...buyer, id: String(buyer.id) })),
       places,
     };
     const saveTimer = window.setTimeout(() => {
@@ -498,7 +573,7 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
         .catch((error) => console.error("Workspace data could not be saved.", error));
     }, 350);
     return () => window.clearTimeout(saveTimer);
-  }, [workspaceDataReady, currencySettings, gstRates, items, customers, places]);
+  }, [workspaceDataReady, currencySettings, gstRates, items, customers, buyers, places]);
 
   useEffect(() => {
     window.localStorage.setItem(accountStorageKey(CURRENCY_STORAGE_KEY, user?.id), JSON.stringify(currencySettings));
@@ -525,20 +600,34 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
     window.localStorage.setItem(accountStorageKey(CUSTOMERS_STORAGE_KEY, user?.id), JSON.stringify(customers));
   }, [customers, user?.id]);
 
+  useEffect(() => {
+    window.localStorage.setItem(accountStorageKey(BUYERS_STORAGE_KEY, user?.id), JSON.stringify(buyers));
+  }, [buyers, user?.id]);
+
   const saveWorkspaceDataNow = () => saveWorkspaceData({
     currencies: currencySettings,
     rates: gstRates,
     items: items.map((item) => ({ ...item, id: String(item.id) })),
     customers: customers.map((customer) => ({ ...customer, id: String(customer.id) })),
+    buyers: buyers.map((buyer) => ({ ...buyer, id: String(buyer.id) })),
     places,
   });
 
-  const useCustomer = (customer) => {
+  const useConsignee = (consignee) => {
     setForm((current) => ({
       ...current,
-      customerName: customer.name,
-      customerGstin: customer.gstin || "",
-      customerAddress: customer.address || "",
+      consigneeName: consignee.name,
+      consigneeAddress: consignee.address || "",
+    }));
+    setPage("invoice");
+  };
+
+  const useBuyer = (buyer) => {
+    setForm((current) => ({
+      ...current,
+      customerName: buyer.name,
+      customerGstin: buyer.gstin || "",
+      customerAddress: buyer.address || "",
     }));
     setErrors((current) => ({
       ...current,
@@ -681,8 +770,8 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
     const next = {};
     if (!form.proformaNo.trim()) next.proformaNo = "Invoice number is required.";
     if (!form.date) next.date = "Invoice date is required.";
-    if (!form.customerName.trim()) next.customerName = "Customer name is required.";
-    if (!form.customerAddress.trim()) next.customerAddress = "Customer address is required.";
+    if (!form.customerName.trim()) next.customerName = "Buyer name is required.";
+    if (!form.customerAddress.trim()) next.customerAddress = "Buyer address is required.";
     if (!places.some((state) => state.code === form.placeOfSupplyCode)) next.placeOfSupplyCode = "Choose a valid state code from the suggestions.";
     if (String(form.volume).trim() && (!Number.isFinite(Number(form.volume)) || Number(form.volume) <= 0)) next.volume = "Volume must be greater than 0.";
     if (form.containerNo.trim() && !/^[A-Z]{4}\d{7}$/i.test(form.containerNo.trim())) next.containerNo = "Use a 4-letter owner code followed by 7 digits, or leave blank.";
@@ -715,7 +804,10 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
   };
 
   const handlePrint = async () => {
+    if (printInProgressRef.current || exportingInvoices) return;
     if (!validate()) return;
+    printInProgressRef.current = true;
+    setInvoicePrintStatus("Saving invoice and preparing the print dialog…");
     setInvoiceSaveError("");
     try {
       const { invoices } = await getInvoices();
@@ -737,10 +829,17 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
         setActiveInvoiceId(savedInvoiceId);
         setInvoiceReady(true);
       }
+      setInvoicePrintStatus("Invoice saved. Opening print dialog…");
+      await new Promise((resolve) => {
+        window.requestAnimationFrame(() => window.requestAnimationFrame(resolve));
+      });
       window.print();
     } catch (error) {
       console.error("Invoice could not be saved before printing.", error);
       setInvoiceSaveError(`Invoice could not be saved: ${error.message}`);
+    } finally {
+      printInProgressRef.current = false;
+      setInvoicePrintStatus("");
     }
   };
 
@@ -763,9 +862,9 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
     return ({
       proformaNo: "Invoice number",
       date: "Invoice date",
-      customerName: "Customer name",
-      customerAddress: "Customer address",
-      customerGstin: "Customer GSTIN",
+      customerName: "Buyer name",
+      customerAddress: "Buyer address",
+      customerGstin: "Buyer GSTIN",
       placeOfSupplyCode: "Place of supply",
       volume: "Volume",
       containerNo: "Container number",
@@ -788,7 +887,7 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
   };
 
   return (
-    <div className="bill-app" onKeyDownCapture={handleManagementArrowNavigation}>
+    <div className="bill-app" aria-busy={invoiceBusy} onKeyDownCapture={handleManagementArrowNavigation}>
       <header className="bill-toolbar">
         {page === "invoice" && <div className="toolbar-brand">
           <span className="toolbar-eyebrow">IET LOGISTICS</span>
@@ -796,26 +895,27 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
           <p>Create, review, and print invoices</p>
         </div>}
         <div className="toolbar-actions">
-          {page === "invoice" && onHome && <button type="button" className="btn btn-light" onClick={onHome}>Back to Home</button>}
+          {page === "invoice" && onHome && <button type="button" className="btn btn-light" onClick={onHome} disabled={invoiceBusy}>Back to Home</button>}
           <label className="page-navigation">
-            <select className="page-nav-select" aria-label="Select a workspace page" value={page} onChange={(event) => handlePageSelection(event.target.value)}>
+            <select className="page-nav-select" aria-label="Select a workspace page" value={page} onChange={(event) => handlePageSelection(event.target.value)} disabled={invoiceBusy}>
               {WORKSPACE_PAGES.map((workspacePage) => <option key={workspacePage.id} value={workspacePage.id}>{workspacePage.label}</option>)}
               <option value="logout">Log out</option>
             </select>
           </label>
           {page === "invoice" && mode === "view" && savedInvoices.length > 0 && <label className="invoice-navigation">
             <span>My invoices</span>
-            <select aria-label="Choose one of your invoices" value={activeInvoiceId || ""} onChange={(event) => selectInvoice(event.target.value)}>
+            <select aria-label="Choose one of your invoices" value={activeInvoiceId || ""} onChange={(event) => selectInvoice(event.target.value)} disabled={invoiceBusy}>
               {savedInvoices.map((invoice, index) => <option key={invoice.id} value={invoice.id}>{invoiceLabel(invoice, index)}</option>)}
             </select>
           </label>}
-          {page === "invoice" && mode === "view" && <button type="button" className="btn btn-light" onClick={exportAllInvoices} disabled={exportingInvoices}>{exportingInvoices ? "Exporting…" : "Export all"}</button>}
-          {page === "invoice" && <button type="button" className="btn btn-primary" onClick={handlePrint}>Print / Save PDF</button>}
+          {page === "invoice" && mode === "view" && <button type="button" className="btn btn-light" onClick={exportAllInvoices} disabled={invoiceBusy}>{exportingInvoices ? "Exporting…" : "Export all"}</button>}
+          {page === "invoice" && <button type="button" className="btn btn-primary" onClick={handlePrint} disabled={invoiceBusy}>{invoicePrintStatus ? "Processing…" : "Print / Save PDF"}</button>}
         </div>
       </header>
 
       {invoiceSaveError && <div className="invoice-save-error" role="alert">{invoiceSaveError}</div>}
       {invoiceExportStatus && <p className="invoice-export-status" role="status">{invoiceExportStatus}</p>}
+      {invoicePrintStatus && <p className="invoice-print-status screen-only" role="status" aria-live="polite">{invoicePrintStatus}</p>}
 
       {page === "invoice" && Object.values(errors).some(Boolean) && (
         <div className="invoice-validation-summary" role="alert">
@@ -826,7 +926,7 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
         </div>
       )}
 
-      {page === "invoice" ? <div className="bill-workspace preview-mode">
+      {page === "invoice" ? <div className="bill-workspace preview-mode" inert={invoiceBusy}>
         <PreviewPage
           COMPANY={COMPANY}
           form={form}
@@ -842,12 +942,14 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
           items={items}
           places={places}
           customers={customers}
+          buyers={buyers}
           errors={errors}
           updateField={updateField}
           updatePlaceOfSupply={updatePlaceOfSupply}
           updateCharge={updateCharge}
           updateChargeCurrency={updateChargeCurrency}
-          onSelectCustomer={useCustomer}
+          onSelectConsignee={useConsignee}
+          onSelectBuyer={useBuyer}
           applyCatalogItem={applyCatalogItem}
           addCharge={addCharge}
           removeCharge={removeCharge}
@@ -865,7 +967,8 @@ export default function ProformaInvoice({ mode = "view", onHome, onLogout, user,
         onSave={saveWorkspaceDataNow}
       />
         : page === "items" ? <ItemsPage items={items} gstRates={gstRates} onChange={setItems} onSave={saveWorkspaceDataNow} />
-          : page === "customers" ? <CustomersPage customers={customers} onChange={setCustomers} onUseCustomer={useCustomer} onSaveCustomers={saveWorkspaceDataNow} />
+          : page === "consignees" ? <CustomersPage customers={customers} onChange={setCustomers} onUseCustomer={useConsignee} onSaveCustomers={saveWorkspaceDataNow} directoryName="Consignee" />
+          : page === "buyers" ? <CustomersPage customers={buyers} onChange={setBuyers} onUseCustomer={useBuyer} onSaveCustomers={saveWorkspaceDataNow} directoryName="Buyer" />
           : <PlaceOfSupplyPage
             places={places}
             onPlacesChange={setPlaces}

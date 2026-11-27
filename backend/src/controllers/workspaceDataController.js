@@ -1,10 +1,12 @@
 import WorkspaceData from "../models/WorkspaceData.js";
 
-const COLLECTION_KEYS = ["currencies", "rates", "items", "customers", "places"];
+const PARTY_FIELDS = ["id", "name", "gstin", "address", "email", "phone"];
+const COLLECTION_KEYS = ["currencies", "rates", "items", "customers", "buyers", "places"];
 const FIELD_KEYS = {
   currencies: ["code", "name", "inrValue"],
   items: ["id", "description", "sac", "rate", "gstRate"],
-  customers: ["id", "name", "gstin", "address", "email", "phone"],
+  customers: PARTY_FIELDS,
+  buyers: PARTY_FIELDS,
   places: ["code", "name"],
 };
 
@@ -15,6 +17,7 @@ function toWorkspaceResponse(document) {
     rates: document?.rates || [],
     items: document?.items || [],
     customers: document?.customers || [],
+    buyers: document?.buyers || [],
     places: document?.places || [],
   };
 }
@@ -37,7 +40,7 @@ function normalizePayload(body) {
   }
 
   const normalized = {};
-  for (const key of ["currencies", "items", "customers", "places"]) {
+  for (const key of ["currencies", "items", "customers", "buyers", "places"]) {
     normalized[key] = body[key].map((entry) => {
       if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
         throw badRequest(`Each ${key} entry must be an object.`);
@@ -87,7 +90,7 @@ export async function saveWorkspaceData(request, response, next) {
     const document = await WorkspaceData.findOneAndUpdate(
       { owner: request.user.id },
       { $set: { ...payload, initialized: true } },
-      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true },
+      { returnDocument: "after", upsert: true, runValidators: true, setDefaultsOnInsert: true },
     ).lean();
     return response.json(toWorkspaceResponse(document));
   } catch (error) {

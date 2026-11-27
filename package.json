@@ -1,0 +1,52 @@
+{
+  "name": "iet-billing-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Windows desktop installer for the IET billing system",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "build:frontend": "npm --prefix frontend run build",
+    "start:desktop": "npm run build:frontend && electron .",
+    "build:win": "npm run build:frontend && electron-builder --win --dir --x64 && node scripts/build-windows-installer.cjs"
+  },
+  "devDependencies": {
+    "electron": "45.5.0",
+    "electron-builder": "26.18.0",
+    "electron-winstaller": "5.4.0",
+    "node": "22.23.5"
+  },
+  "build": {
+    "appId": "com.triovexdevelopers.ietbilling",
+    "productName": "IET Billing System",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "backend/src",
+        "to": "backend/src"
+      },
+      {
+        "from": "backend/package.json",
+        "to": "backend/package.json"
+      },
+      {
+        "from": "backend/node_modules",
+        "to": "backend/node_modules"
+      },
+      {
+        "from": "frontend/dist",
+        "to": "frontend"
+      },
+      {
+        "from": "node_modules/node/bin/node.exe",
+        "to": "node/node.exe"
+      }
+    ],
+    "win": {}
+  }
+}

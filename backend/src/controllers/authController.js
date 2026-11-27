@@ -35,7 +35,6 @@ export async function login(request, response) {
   }
 
   response.cookie(SESSION_COOKIE, createSessionToken(user), cookieOptions);
-  console.info("Session authentication diagnostic", { event: "session-cookie-issued" });
   return response.json({ user: { id: user.id, email: user.email, role: user.role } });
 }
 
@@ -45,8 +44,40 @@ export function currentUser(request, response) {
 
 export function logout(_request, response) {
   response.clearCookie(SESSION_COOKIE, { ...cookieOptions, maxAge: undefined });
-  console.info("Session authentication diagnostic", { event: "session-cookie-cleared" });
   return response.status(204).end();
+}
+
+export async function changeOwnEmail(request, response, next) {
+  if (request.user.role !== "admin") {
+    return response.status(403).json({ message: "Admin access is required." });
+  }
+
+  const { email, currentPassword } = request.body || {};
+  if (typeof email !== "string" || email.length > 254
+    || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    return response.status(400).json({ message: "Enter a valid email address." });
+  }
+  if (typeof currentPassword !== "string" || currentPassword.length === 0
+    || Buffer.byteLength(currentPassword, "utf8") > MAX_PASSWORD_BYTES) {
+    return response.status(400).json({ message: "Enter your current password." });
+  }
+
+  try {
+    const user = await User.findById(request.user.id).select("+passwordHash");
+    if (!user || user.role !== "admin") return response.status(401).json({ message: "Not signed in." });
+
+    const passwordMatches = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!passwordMatches) return response.status(400).json({ message: "Current password is incorrect." });
+
+    user.email = email.trim().toLowerCase();
+    await user.save();
+    return response.json({ user: { id: user.id, email: user.email, role: user.role } });
+  } catch (error) {
+    if (error.code === 11000) {
+      return response.status(409).json({ message: "A user with that email already exists." });
+    }
+    return next(error);
+  }
 }
 
 export async function changeOwnPassword(request, response, next) {

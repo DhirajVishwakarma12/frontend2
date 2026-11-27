@@ -1,12 +1,14 @@
 import "../Style/invoice-home.css";
 
 export default function InvoiceHome({ user, onViewInvoice, onCreateInvoice, onOpenAdmin }) {
+  const isAdmin = String(user?.role || "").trim().toLowerCase() === "admin";
+
   return (
     <main className="invoice-home">
       <header className="invoice-home-header">
         <span className="invoice-home-brand">IET LOGISTICS PRIVATE LTD</span>
         <span className="invoice-home-header-actions">
-          {user?.role === "admin" && <button type="button" className="invoice-home-admin-link" onClick={onOpenAdmin}>Admin dashboard</button>}
+          {isAdmin && <button type="button" className="invoice-home-admin-link" onClick={onOpenAdmin}>Admin dashboard</button>}
           <span className="invoice-home-kicker">BILLING WORKSPACE</span>
         </span>
       </header>

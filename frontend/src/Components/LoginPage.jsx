@@ -74,8 +74,8 @@ export default function LoginPage({ onLogin }) {
           <p className="login-help">Need access? Contact your administrator</p>
           <div className="login-security"><span aria-hidden="true">✓</span> Secure workspace access</div>
         </div>
-        <footer className="login-copyright">© {new Date().getFullYear()} IET LOGISTICS PRIVATE LTD</footer>
       </section>
+      <footer className="login-credits">@triovexdevelopers</footer>
     </main>
   );
 }

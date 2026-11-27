@@ -5,6 +5,7 @@ const WORKSPACE_CACHE_KEYS = {
   rates: "white-star-gst-rates",
   items: "white-star-items",
   customers: "white-star-customers",
+  buyers: "white-star-buyers",
   places: "white-star-places",
 };
 

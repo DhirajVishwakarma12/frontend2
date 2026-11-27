@@ -9,12 +9,15 @@ export async function connectDatabase() {
   await User.createIndexes();
   await WorkspaceData.createIndexes();
   await Invoice.createIndexes();
-  await User.updateOne(
-    { email: env.adminEmail },
-    { $setOnInsert: { email: env.adminEmail, passwordHash: env.adminPasswordHash, role: "admin" } },
-    { upsert: true },
-  );
-  await User.updateOne({ email: env.adminEmail }, { $set: { role: "admin" } });
+  const existingAdmin = await User.exists({ role: "admin" });
+  if (!existingAdmin) {
+    await User.updateOne(
+      { email: env.adminEmail },
+      { $setOnInsert: { email: env.adminEmail, passwordHash: env.adminPasswordHash, role: "admin" } },
+      { upsert: true },
+    );
+    await User.updateOne({ email: env.adminEmail }, { $set: { role: "admin" } });
+  }
 }
 
 export async function closeDatabase() {

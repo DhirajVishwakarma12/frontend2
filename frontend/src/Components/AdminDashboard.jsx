@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createUser, getUsers, resetUserPassword, updateUserEmail } from "../services/admin.js";
 import { getInvoices } from "../services/invoices.js";
-import { changeAdminPassword } from "../services/auth.js";
+import { changeAdminEmail, changeAdminPassword } from "../services/auth.js";
 import "../Style/admin-dashboard.css";
 
 const money = (value) => Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -19,7 +19,8 @@ function dateLabel(value) {
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-export default function AdminDashboard({ user, onLogout, onOpenInvoice }) {
+export default function AdminDashboard({ user, onLogout, onOpenInvoice, onUserUpdated }) {
+  const isAdmin = String(user?.role || "").trim().toLowerCase() === "admin";
   const [section, setSection] = useState("invoices");
   const [invoices, setInvoices] = useState([]);
   const [users, setUsers] = useState([]);
@@ -32,6 +33,9 @@ export default function AdminDashboard({ user, onLogout, onOpenInvoice }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newAdminPassword, setNewAdminPassword] = useState("");
   const [accountStatus, setAccountStatus] = useState("");
+  const [adminEmailDraft, setAdminEmailDraft] = useState(user?.email || "");
+  const [adminEmailStatus, setAdminEmailStatus] = useState("");
+  const [savingAdminEmail, setSavingAdminEmail] = useState(false);
   const [savingAdminPassword, setSavingAdminPassword] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
@@ -43,10 +47,13 @@ export default function AdminDashboard({ user, onLogout, onOpenInvoice }) {
     setLoading(true);
     setLoadError("");
     try {
-      const [invoiceData, userData] = await Promise.all([getInvoices(), getUsers()]);
+      const requests = [getInvoices()];
+      if (isAdmin) requests.push(getUsers());
+      const [invoiceData, userData] = await Promise.all(requests);
       setInvoices(invoiceData.invoices || []);
-      setUsers(userData.users || []);
-      setEmailDrafts(Object.fromEntries((userData.users || []).map((entry) => [entry.id, entry.email])));
+      const managedUsers = userData?.users || [];
+      setUsers(managedUsers);
+      setEmailDrafts(Object.fromEntries(managedUsers.map((entry) => [entry.id, entry.email])));
     } catch (error) {
       setLoadError(error.message);
     } finally {
@@ -110,6 +117,23 @@ export default function AdminDashboard({ user, onLogout, onOpenInvoice }) {
     }
   };
 
+  const saveAdminEmail = async (event) => {
+    event.preventDefault();
+    setAdminEmailStatus("");
+    setSavingAdminEmail(true);
+    try {
+      const { user: updatedUser } = await changeAdminEmail(adminEmailDraft, currentPassword);
+      setAdminEmailDraft(updatedUser.email);
+      setCurrentPassword("");
+      onUserUpdated(updatedUser);
+      setAdminEmailStatus("Admin email updated.");
+    } catch (error) {
+      setAdminEmailStatus(error.message);
+    } finally {
+      setSavingAdminEmail(false);
+    }
+  };
+
   const addUser = async (event) => {
     event.preventDefault();
     setNewUserStatus("");
@@ -155,7 +179,7 @@ export default function AdminDashboard({ user, onLogout, onOpenInvoice }) {
         </div>
         <div className="admin-table-wrap">
           <table className="admin-table">
-            <thead><tr><th>Invoice</th><th>Customer</th><th>Owner</th><th>Updated</th><th>Total (INR)</th><th /></tr></thead>
+            <thead><tr><th>Invoice</th><th>Buyer</th><th>Owner</th><th>Updated</th><th>Total (INR)</th><th /></tr></thead>
             <tbody>
               {filteredInvoices.map((invoice) => <tr key={invoice.id}>
                 <td>{invoice.form?.proformaNo || "Untitled invoice"}</td>
@@ -193,6 +217,13 @@ export default function AdminDashboard({ user, onLogout, onOpenInvoice }) {
           {users.length === 0 && <p className="admin-empty">No user accounts are available to manage.</p>}
         </div>
       </section> : <section className="admin-card admin-account-card">
+        <div className="admin-section-heading"><div><h2>Change admin email</h2><p>Confirm your current password to update the email used to sign in.</p></div></div>
+        <form className="admin-account-form" onSubmit={saveAdminEmail}>
+          <label><span>New email address</span><input type="email" autoComplete="email" required maxLength="254" value={adminEmailDraft} onChange={(event) => setAdminEmailDraft(event.target.value)} /></label>
+          <label><span>Current password</span><input type="password" autoComplete="current-password" required value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label>
+          <button type="submit" className="admin-button admin-button-dark" disabled={savingAdminEmail}>{savingAdminEmail ? "Saving…" : "Update email"}</button>
+        </form>
+        {adminEmailStatus && <p className={`admin-user-status ${adminEmailStatus === "Admin email updated." ? "is-success" : ""}`} role="status">{adminEmailStatus}</p>}
         <div className="admin-section-heading"><div><h2>Change admin password</h2><p>The new password will be hashed and saved to the database. Use it the next time you sign in.</p></div></div>
         <form className="admin-account-form" onSubmit={saveAdminPassword}>
           <label><span>Current password</span><input type="password" autoComplete="current-password" required value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label>

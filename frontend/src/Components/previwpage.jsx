@@ -71,15 +71,15 @@ function handleInvoiceFieldKeyDown(event) {
   }
 }
 
-function CustomerPicker({ value, customers, error, onChange, onSelectCustomer }) {
+function PartyPicker({ value, parties, partyName, addressClass, error, onChange, onSelectParty }) {
   const [editing, setEditing] = React.useState(false);
   const [query, setQuery] = React.useState(value || "");
   const [activeIndex, setActiveIndex] = React.useState(0);
   const inputRef = React.useRef(null);
   const startingValue = React.useRef(value || "");
   const matches = query.trim()
-    ? customers.filter((customer) => customer.name?.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 7)
-    : customers.slice(0, 7);
+    ? parties.filter((party) => party.name?.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 7)
+    : parties.slice(0, 7);
 
   React.useEffect(() => {
     if (!editing) setQuery(value || "");
@@ -89,12 +89,12 @@ function CustomerPicker({ value, customers, error, onChange, onSelectCustomer })
     if (editing) inputRef.current?.focus();
   }, [editing]);
 
-  const selectCustomer = (customer) => {
+  const selectParty = (party) => {
     const invoicePage = inputRef.current?.closest(".invoice-page");
-    onSelectCustomer(customer);
-    setQuery(customer.name);
+    onSelectParty(party);
+    setQuery(party.name);
     setEditing(false);
-    window.requestAnimationFrame(() => invoicePage?.querySelector(".customer-address-edit")?.focus());
+    window.requestAnimationFrame(() => invoicePage?.querySelector(`.${addressClass}`)?.focus());
   };
 
   const handleKeyDown = (event) => {
@@ -110,7 +110,7 @@ function CustomerPicker({ value, customers, error, onChange, onSelectCustomer })
       setActiveIndex((current) => (current - 1 + matches.length) % matches.length);
     } else if (event.key === "Enter" && matches.length) {
       event.preventDefault();
-      selectCustomer(matches[activeIndex] || matches[0]);
+      selectParty(matches[activeIndex] || matches[0]);
     } else if (event.key === "Enter" || event.key === "ArrowDown") {
       handleInvoiceFieldKeyDown(event);
     } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
@@ -118,35 +118,38 @@ function CustomerPicker({ value, customers, error, onChange, onSelectCustomer })
     }
   };
 
-  return editing ? <span className="customer-picker screen-only">
-    <input
-      ref={inputRef}
-      className={`direct-editable-input${error ? " has-error" : ""}`}
-      aria-label="Customer name"
-      aria-autocomplete="list"
-      aria-expanded={matches.length > 0}
-      aria-invalid={Boolean(error)}
-      value={query}
-      onFocus={() => { startingValue.current = value || ""; }}
-      onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); onChange(event.target.value); }}
-      onBlur={() => setEditing(false)}
-      onKeyDown={handleKeyDown}
-    />
-    {matches.length > 0 && <span className="customer-suggestions" role="listbox">
-      {matches.map((customer, index) => <button
-        type="button"
-        role="option"
-        aria-selected={index === activeIndex}
-        className={index === activeIndex ? "is-active" : ""}
-        key={customer.id}
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={() => selectCustomer(customer)}
-      ><strong>{customer.name}</strong><span>{customer.gstin || "No GSTIN"}</span></button>)}
-    </span>}
-  </span> : <span
+  return editing ? <>
+    <span className="customer-picker screen-only">
+      <input
+        ref={inputRef}
+        className={`direct-editable-input${error ? " has-error" : ""}`}
+        aria-label={`${partyName} name`}
+        aria-autocomplete="list"
+        aria-expanded={matches.length > 0}
+        aria-invalid={Boolean(error)}
+        value={query}
+        onFocus={() => { startingValue.current = value || ""; }}
+        onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); onChange(event.target.value); }}
+        onBlur={() => setEditing(false)}
+        onKeyDown={handleKeyDown}
+      />
+      {matches.length > 0 && <span className="customer-suggestions" role="listbox">
+        {matches.map((party, index) => <button
+          type="button"
+          role="option"
+          aria-selected={index === activeIndex}
+          className={index === activeIndex ? "is-active" : ""}
+          key={party.id}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => selectParty(party)}
+        ><strong>{party.name}</strong><span>{party.gstin || "No GSTIN"}</span></button>)}
+      </span>}
+    </span>
+    <span className="direct-editable print-only">{query}</span>
+  </> : <span
     className={`direct-editable${error ? " has-error" : ""}`}
     role="textbox"
-    aria-label="Edit customer name"
+    aria-label={`Edit ${partyName.toLowerCase()} name`}
     aria-invalid={Boolean(error)}
     data-empty={!value ? "true" : "false"}
     tabIndex={0}
@@ -165,21 +168,28 @@ function PlaceOfSupplyPicker({ code, name, places, onSelect }) {
   const [query, setQuery] = React.useState(code || "");
   const [isOpen, setIsOpen] = React.useState(false);
   const [activeIndex, setActiveIndex] = React.useState(0);
+  const inputRef = React.useRef(null);
   const matches = places.filter((place) => {
     const value = query.trim().toLowerCase();
     return !value || String(place.code || "").startsWith(value) || String(place.name || "").toLowerCase().includes(value);
   }).slice(0, 8);
 
-  const selectPlace = (place) => {
+  const selectPlace = (place, moveToNextField = false) => {
     onSelect(place.code);
     setQuery(place.code);
     setIsOpen(false);
     setActiveIndex(0);
+    if (moveToNextField) {
+      window.requestAnimationFrame(() => {
+        if (inputRef.current) focusInvoiceField(inputRef.current);
+      });
+    }
   };
 
   return (
     <span className="place-of-supply-picker screen-only">
       <input
+        ref={inputRef}
         className="invoice-place-select"
         aria-label="Choose place of supply"
         aria-autocomplete="list"
@@ -204,7 +214,7 @@ function PlaceOfSupplyPicker({ code, name, places, onSelect }) {
             setActiveIndex((current) => (current - 1 + matches.length) % matches.length);
           } else if (event.key === "Enter" && isOpen && matches.length) {
             event.preventDefault();
-            selectPlace(matches[activeIndex] || matches[0]);
+            selectPlace(matches[activeIndex] || matches[0], true);
           } else if (event.key === "Escape") {
             setIsOpen(false);
             setQuery(code || "");
@@ -409,7 +419,10 @@ function EditableText({ value, onChange, className = "", multiline = false, nume
   };
 
   return editing ? (
-    multiline ? <textarea {...sharedProps} rows={2} /> : <input {...sharedProps} type="text" />
+    <>
+      {multiline ? <textarea {...sharedProps} className={`${sharedProps.className} screen-only`} rows={2} /> : <input {...sharedProps} className={`${sharedProps.className} screen-only`} type="text" />}
+      <span className={`direct-editable print-only ${className}${error ? " has-error" : ""}`} data-empty={!draft ? "true" : "false"}>{draft}</span>
+    </>
   ) : (
     <span
       className={`direct-editable ${className}${error ? " has-error" : ""}`}
@@ -432,7 +445,7 @@ function EditableText({ value, onChange, className = "", multiline = false, nume
   );
 }
 
-const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, totals, amountInWords, taxSummary, currencies, currencySettings, gstRates, items, places, customers, errors, updateField, updatePlaceOfSupply, updateCharge, updateChargeCurrency, applyCatalogItem, addCharge, removeCharge, canRemoveCharge, onSelectCustomer }) => {
+const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, totals, amountInWords, taxSummary, currencies, currencySettings, gstRates, items, places, customers, buyers, errors, updateField, updatePlaceOfSupply, updateCharge, updateChargeCurrency, applyCatalogItem, addCharge, removeCharge, canRemoveCharge, onSelectConsignee, onSelectBuyer }) => {
   const missingExchangeRates = calculatedCharges.filter((row) =>
     row.currency !== "INR" && (!Number.isFinite(Number(row.exchangeRate)) || Number(row.exchangeRate) <= 0)
   ).length;
@@ -454,38 +467,52 @@ const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, to
         </div>
       </div>
       <article className="invoice-page compact-invoice">
+        <div className="invoice-company-watermark" aria-hidden="true">{COMPANY.name}</div>
         <header className="invoice-header">
           <img className="iet-banner-image" src="/logo-banner.png" alt="IET Logistics Private Limited banner" />
+          <div className="invoice-tax-details">
+            <div>PAN: AAHCI3210J</div>
+            <div>GSTIN: 27AAHCI3210J1ZQ</div>
+          </div>
         </header>
         <div className="invoice-title-spacer" aria-hidden="true" />
 
         <section className="invoice-details-box">
           <div className="invoice-party-details">
-            <div className="invoice-detail-row"><strong>Customer</strong><span><CustomerPicker value={form.customerName} customers={customers} onChange={updateField("customerName")} onSelectCustomer={onSelectCustomer} error={errors.customerName} /></span></div>
-            <EditableText className="customer-address-edit" value={form.customerAddress} onChange={updateField("customerAddress")} multiline error={errors.customerAddress} />
+            <div className="invoice-detail-row"><strong>Consignee</strong><span><PartyPicker value={form.consigneeName} parties={customers} partyName="Consignee" addressClass="consignee-address-edit" onChange={updateField("consigneeName")} onSelectParty={onSelectConsignee} /></span></div>
+            <EditableText className="customer-address-edit consignee-address-edit" value={form.consigneeAddress} onChange={updateField("consigneeAddress")} multiline />
+            <div className="invoice-detail-row invoice-gstin-row"><strong>GSTIN</strong><span><EditableText value={form.customerGstin} onChange={updateField("customerGstin")} error={errors.customerGstin} /></span></div>
             {[
-              ["GSTIN", "customerGstin", form.customerGstin],
-              ["Vessel Voy", "vessel", form.vessel],
+              ["Vessel / Voy", "vesselVoyage", form.vesselVoyage || [form.vessel, form.voyage].filter(Boolean).join(" ")],
               ["Port Of Loading", "portLoading", form.portLoading],
               ["Port Of Discharge", "portDischarge", form.portDischarge],
               ["Container No.", "containerNo", form.containerNo],
-            ].map(([label, field, value]) => <div className={`invoice-detail-row${label === "Port Of Loading" ? " invoice-row-spaced" : ""}`} key={label}><strong>{label}</strong><span>{label === "Vessel Voy" ? <><EditableText value={value} onChange={updateField(field)} /> <EditableText value={form.voyage} onChange={updateField("voyage")} /></> : <EditableText value={value} onChange={updateField(field)} error={errors[field]} />}</span></div>)}
+            ].map(([label, field, value]) => <div className={`invoice-detail-row${label === "Vessel / Voy" ? " invoice-vessel-row" : ""}`} key={label}><strong>{label}</strong><span><EditableText value={value} onChange={updateField(field)} error={errors[field]} /></span></div>)}
             <div className="invoice-detail-row"><strong>Date Of Sailing</strong><span><EditableText value={dateForPrint(form.sailing)} onChange={(value) => updateField("sailing")(value.split("/").reverse().join("-"))} /></span></div>
             <div className="invoice-detail-row invoice-place-row"><strong>Place of Supply</strong><span className="place-of-supply-value"><PlaceOfSupplyPicker code={form.placeOfSupplyCode} name={form.placeOfSupply} places={places} onSelect={updatePlaceOfSupply} /><span className="place-of-supply-print">({form.placeOfSupplyCode}) {form.placeOfSupply}</span></span></div>
           </div>
           <div className="invoice-extra-details">
-            <div className="invoice-right-row"><strong>Consignee</strong><span><EditableText value={form.consigneeName || form.customerName} onChange={updateField("consigneeName")} /></span></div>
-            <EditableText className="invoice-right-address" value={form.consigneeAddress || form.customerAddress} onChange={updateField("consigneeAddress")} multiline />
-            <div className="invoice-right-row"><strong>Invoice No</strong><span><EditableText value={form.proformaNo} onChange={updateField("proformaNo")} error={errors.proformaNo} /></span></div>
-            <div className="invoice-right-row"><strong>Invoice Date</strong><span><EditableText value={dateForPrint(form.date)} onChange={(value) => updateField("date")(value.split("/").reverse().join("-"))} error={errors.date} /></span></div>
+            <div className="invoice-right-row"><strong>Buyer</strong><span><PartyPicker value={form.customerName} parties={buyers} partyName="Buyer" addressClass="buyer-address-edit" onChange={updateField("customerName")} onSelectParty={onSelectBuyer} error={errors.customerName} /></span></div>
+            <EditableText className="invoice-right-address buyer-address-edit" value={form.customerAddress} onChange={updateField("customerAddress")} multiline error={errors.customerAddress} />
+            <div className="invoice-right-row invoice-aligned-row"><strong>Invoice Date</strong><span><EditableText value={dateForPrint(form.date)} onChange={(value) => updateField("date")(value.split("/").reverse().join("-"))} error={errors.date} /></span></div>
+            <div className="invoice-right-row invoice-aligned-row"><strong>Invoice No</strong><span><EditableText value={form.proformaNo} onChange={updateField("proformaNo")} error={errors.proformaNo} /></span></div>
             <div className="invoice-right-row"><strong>Container No.</strong><span><EditableText value={form.containerNo} onChange={updateField("containerNo")} error={errors.containerNo} /></span></div>
-            <div className="invoice-right-row"><strong>Volume</strong><span><EditableText value={form.volume} onChange={updateField("volume")} numeric error={errors.volume} /> <span> X </span><EditableText value={form.containerType} onChange={updateField("containerType")} /></span></div>
+            <div className="invoice-right-row"><strong>Volume</strong><span className="volume-container-value"><EditableText className="volume-value" value={form.volume} onChange={updateField("volume")} numeric error={errors.volume} /><span className="invoice-inline-x">X</span><EditableText className="container-type-value" value={form.containerType} onChange={updateField("containerType")} /></span></div>
             <div className="invoice-detail-divider" />
-            <div className="invoice-right-row"><strong>Shipping Bill No</strong><span><EditableText value={form.shippingBillNo || form.blNo} onChange={updateField("shippingBillNo")} /></span></div>
-            <div className="invoice-right-row"><strong>Shipping Bill Date</strong><span><EditableText value={dateForPrint(form.shippingBillDate || form.ltDate)} onChange={(value) => updateField("shippingBillDate")(value.split("/").reverse().join("-"))} /></span></div>
-            <div className="invoice-or-row">or</div>
-            <div className="invoice-right-row"><strong>BOE No</strong><span><EditableText value={form.boeNo || form.bookingNo} onChange={updateField("boeNo")} /></span></div>
-            <div className="invoice-right-row"><strong>BOE Date</strong><span><EditableText value={dateForPrint(form.boeDate || form.ltDate)} onChange={(value) => updateField("boeDate")(value.split("/").reverse().join("-"))} /></span></div>
+            <label className="invoice-right-row invoice-document-selector screen-only"><strong>Document</strong><select className="shipping-document-select" value={form.shippingDocumentType || "shippingBill"} onChange={(event) => {
+              const details = event.currentTarget.closest(".invoice-extra-details");
+              updateField("shippingDocumentType")(event.target.value);
+              window.requestAnimationFrame(() => {
+                details?.querySelector(".invoice-document-field .direct-editable")?.focus();
+              });
+            }}><option value="shippingBill">Shipping Bill</option><option value="boe">BOE</option></select></label>
+            {form.shippingDocumentType === "boe" ? <>
+              <div className="invoice-right-row invoice-document-field"><strong>BOE No</strong><span><EditableText value={form.boeNo || form.bookingNo} onChange={updateField("boeNo")} /></span></div>
+              <div className="invoice-right-row invoice-document-field"><strong>BOE Date</strong><span><EditableText value={dateForPrint(form.boeDate || form.ltDate)} onChange={(value) => updateField("boeDate")(value.split("/").reverse().join("-"))} /></span></div>
+            </> : <>
+              <div className="invoice-right-row invoice-document-field"><strong>Shipping Bill No</strong><span><EditableText value={form.shippingBillNo || form.blNo} onChange={updateField("shippingBillNo")} /></span></div>
+              <div className="invoice-right-row invoice-document-field invoice-shipping-bill-date"><strong>Shipping Bill Date</strong><span><EditableText value={dateForPrint(form.shippingBillDate || form.ltDate)} onChange={(value) => updateField("shippingBillDate")(value.split("/").reverse().join("-"))} /></span></div>
+            </>}
             <div className="invoice-detail-divider" />
             <div className="invoice-right-row"><strong>Cargo Weight</strong><span><EditableText value={form.cargoWeight} onChange={updateField("cargoWeight")} /></span></div>
             <div className="invoice-right-row"><strong>CBM</strong><span><EditableText value={form.cbm} onChange={updateField("cbm")} /></span></div>
@@ -504,11 +531,14 @@ const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, to
           </thead>
           <tbody>
             {calculatedCharges.map((row, index) => (
-              <tr key={row.id} className={index === calculatedCharges.length - 1 && !row.description.trim() && !row.sac.trim() && (!String(row.rateText).trim() || Number(row.rateText) === 0) ? "invoice-empty-charge-row" : undefined}>
+              <tr key={row.id} className={[
+                index === calculatedCharges.length - 1 && !row.description.trim() && !row.sac.trim() && (!String(row.rateText).trim() || Number(row.rateText) === 0) && "invoice-empty-charge-row",
+                row.currency !== "INR" && "invoice-currency-row",
+              ].filter(Boolean).join(" ") || undefined}>
                 <td>{index + 1}</td><td className="charge-description-cell"><DescriptionPicker chargeId={row.id} value={row.description} items={items} error={errors[`charge-${row.id}-description`]} onChange={(value) => updateCharge(row.id, "description", value)} onSelectItem={(item) => applyCatalogItem(row.id, item)} /><button type="button" className="charge-row-remove screen-only" aria-label={`Remove item ${index + 1}`} title="Remove this item row" disabled={!canRemoveCharge} onClick={() => removeCharge(row.id)}>×</button></td><td className="center sac-cell"><EditableText value={row.sac} onChange={(value) => updateCharge(row.id, "sac", value)} error={errors[`charge-${row.id}-sac`]} /></td>
                 <td className="num"><EditableText value={formatQuantity(row.qty)} onChange={(value) => updateCharge(row.id, "qty", value)} numeric error={errors[`charge-${row.id}-qty`]} /></td>
                 <td className="center currency-cell">
-                  <select className="invoice-currency-select" aria-label={`Currency for charge ${index + 1}`} aria-invalid={Boolean(errors[`charge-${row.id}-currency`])} value={row.currency} onChange={(event) => updateChargeCurrency(row.id, event.target.value)} onKeyDown={(event) => {
+                  <select className="invoice-currency-select screen-only" aria-label={`Currency for charge ${index + 1}`} aria-invalid={Boolean(errors[`charge-${row.id}-currency`])} value={row.currency} onChange={(event) => updateChargeCurrency(row.id, event.target.value)} onKeyDown={(event) => {
                     if (event.key === "ArrowLeft") {
                       event.preventDefault();
                       focusInvoiceField(event.currentTarget, -1);
@@ -518,6 +548,7 @@ const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, to
                   }}>
                     {currencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}
                   </select>
+                  <span className="invoice-currency-print">{row.currency}</span>
                   {row.currency !== "INR" && (
                     <span className="invoice-fx-entry">1 {row.currency} = {Number(row.exchangeRate) > 0 ? money(row.exchangeRate) : "Not set"} INR</span>
                   )}
@@ -572,10 +603,12 @@ const PreviewPage = ({ COMPANY, form, dateForPrint, calculatedCharges, money, to
         </section>
         <div className="invoice-bank-sign">
           <div><strong className="bank-title-print">Bank Account Details :</strong>
-            <div className="bank-print-row"><strong>Beneficiary Name</strong><span>: &nbsp;{COMPANY.bank.beneficiary}</span></div>
-            <div className="bank-print-row"><strong>Bank Name</strong><span>: &nbsp;{COMPANY.bank.name}</span></div>
-            <div className="bank-print-row"><strong>Account Number</strong><span>: &nbsp;{COMPANY.bank.account}</span></div>
+            <div className="bank-print-row"><strong>Name</strong><span>: &nbsp;{COMPANY.bank.beneficiary}</span></div>
+            <div className="bank-print-row"><strong>Bank</strong><span>: &nbsp;{COMPANY.bank.name}</span></div>
+            <div className="bank-print-row bank-address-row"><strong>Address</strong><span>: &nbsp;{COMPANY.bank.address}</span></div>
+            <div className="bank-print-row"><strong>Account No</strong><span>: &nbsp;{COMPANY.bank.account}</span></div>
             <div className="bank-print-row"><strong>IFSC Code</strong><span>: &nbsp;{COMPANY.bank.ifsc}</span></div>
+            <div className="bank-print-row"><strong>Branch</strong><span>: &nbsp;{COMPANY.bank.branch}</span></div>
           </div>
           <div className="invoice-signature"><strong>For {COMPANY.name}</strong><div className="signature-gap" /><strong>Auth. Signatory</strong></div>
         </div>

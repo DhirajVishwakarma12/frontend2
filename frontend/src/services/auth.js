@@ -34,6 +34,13 @@ export function signOut() {
   return request("/logout", { method: "POST" });
 }
 
+export function changeAdminEmail(email, currentPassword) {
+  return request("/email", {
+    method: "PATCH",
+    body: JSON.stringify({ email, currentPassword }),
+  });
+}
+
 export function changeAdminPassword(currentPassword, newPassword) {
   return request("/password", {
     method: "PATCH",
